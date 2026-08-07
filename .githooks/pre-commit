@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Local secret-guard. Enable once per clone: git config core.hooksPath .githooks
+# Blocks committing secret files; runs gitleaks if it's installed. Dependency-free otherwise.
+set -euo pipefail
+
+# 1) Hard block: never commit these, whatever .gitignore says.
+staged="$(git diff --cached --name-only)"
+blocked="$(printf '%s\n' "$staged" | grep -E '(^|/)(\.env(\..+)?|CREDENTIALS\.local\.md)$|\.(pem|key|p12)$|(^|/)id_rsa' | grep -v -E '(^|/)\.env\.example$' || true)"
+if [ -n "$blocked" ]; then
+  echo "pre-commit: refusing to commit secret/ignored file(s):" >&2
+  printf '  %s\n' $blocked >&2
+  echo "Remove them from the commit (they belong in your gitignored .env / local files)." >&2
+  exit 1
+fi
+
+# 2) Optional deep scan if gitleaks is available; skipped cleanly if not installed.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --no-banner || {
+    echo "pre-commit: gitleaks flagged a potential secret in the staged diff." >&2
+    exit 1
+  }
+fi

@@ -1,0 +1,4 @@
+# Machine-local only: where this checkout's clones happen to live.
+config.json
+__pycache__/
+*.pyc

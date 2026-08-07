@@ -1,0 +1,27 @@
+# Documentation gate. Offline rules only — GITHUB_TOKEN is repo-scoped and cannot read
+# org facts (2FA, member list), so those rules run locally under your own gh auth.
+# The checker is vendored at .github/repo-docs.py and kept in sync by the canon-drift rule.
+name: docs
+
+on:
+  pull_request:
+    paths: ["**/*.md", ".github/**", ".githooks/**"]
+  push:
+    branches: [main]
+    paths: ["**/*.md", ".github/**", ".githooks/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check documentation
+        env:
+          REPO_DOCS_ORG: APS-Conecta
+        run: python3 .github/repo-docs.py check . --offline

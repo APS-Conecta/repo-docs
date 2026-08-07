@@ -1,0 +1,4 @@
+{
+  "_comment": "Copy to config.json (gitignored). Machine-local paths only, never policy.",
+  "root": "/path/to/where/your/APS-Conecta/clones/live"
+}

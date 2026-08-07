@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Cómo trabajamos / How we work
+    url: https://github.com/$org/$repo/blob/main/CONTRIBUTING.md
+    about: Workflow, PR gate, Conventional Commits, and documentation rules.

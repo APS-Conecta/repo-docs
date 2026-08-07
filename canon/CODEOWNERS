@@ -1,0 +1,7 @@
+# CODEOWNERS — review routing for $org/$repo.
+#
+# One rule: all three members own every path. GitHub never requests a PR's own
+# author, so each PR auto-requests review from the other two. This backs the
+# 1-approval convention gate documented in CONTRIBUTING.md (a free-plan private
+# repo can't *enforce* code-owner review, so this only auto-requests reviewers).
+* @juliomosorio @mmaartinn @ddespinoza

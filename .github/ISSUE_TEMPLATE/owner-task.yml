@@ -1,0 +1,28 @@
+name: Solicitud (lenguaje simple) / Plain-language request
+description: Para pedir un cambio sin lenguaje técnico. Request a change without code jargon.
+title: "[solicitud]: "
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: ¿Qué debe cambiar? / What should change?
+      description: Descríbelo en palabras simples. Describe it in plain words.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: ¿Por qué? ¿Para qué sirve? / Why? What is it for?
+      description: Qué problema resuelve. What problem it solves.
+  - type: textarea
+    id: done
+    attributes:
+      label: ¿Cómo sabremos que está listo? / How do we know it's done?
+      description: Cómo se ve cuando funciona (aceptación / UAT). What "done" looks like (acceptance / UAT).
+    validations:
+      required: true
+  - type: input
+    id: who
+    attributes:
+      label: ¿Quién debería revisarlo? / Who should look at this?
+      description: Opcional. Optional.

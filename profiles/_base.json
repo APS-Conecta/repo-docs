@@ -1,0 +1,190 @@
+{
+  "_comment": "Craft. What makes documentation correct anywhere. No owner's decisions belong here.",
+  "stack_markers": {
+    "compose.yaml": "docker",
+    "compose.yml": "docker",
+    "package.json": "node",
+    "composer.json": "php",
+    "pyproject.toml": "python",
+    "setup.py": "python",
+    "go.mod": "go",
+    "Cargo.toml": "rust",
+    "pom.xml": "java",
+    "Gemfile": "ruby",
+    "Makefile": "make"
+  },
+  "core_sections": [
+    "what",
+    "status",
+    "quickstart",
+    "licen"
+  ],
+  "archetypes": {
+    "app": {
+      "extra": [
+        "deploy",
+        "config"
+      ]
+    },
+    "library": {
+      "extra": [
+        "install",
+        "api",
+        "consumer"
+      ]
+    },
+    "website": {
+      "extra": [
+        "build",
+        "content"
+      ]
+    },
+    "org-profile": {
+      "extra": []
+    },
+    "cli": {
+      "extra": [
+        "install",
+        "commands",
+        "consumer"
+      ]
+    }
+  },
+  "_comment_contract": "One definition generates the outline, prompts the author, and gates the result, so what is asked for and what is accepted cannot drift (see CONTEXT.md, Section Contract).",
+  "section_prompts": {
+    "what": "What this is, and explicitly what it is not. Name the boundary a reader could get wrong.",
+    "status": "Where it stands today, dated. What is done, what is not. Never aspirational.",
+    "quickstart": "Numbered steps, one action each, the exact copyable command. Every step says where it runs and what output proves it worked.",
+    "licen": "Which licence covers this code, and where third-party notices live.",
+    "deploy": "How it reaches a real environment, and every way that differs from the quickstart.",
+    "config": "Every setting a reader must change: what it does, its default, and which file it lives in.",
+    "install": "How a consumer installs this, the exact command, and which versions are supported.",
+    "api": "The public surface. Link to the source; never restate signatures that will rot.",
+    "consumer": "Who depends on this, so a breaking change has a known blast radius.",
+    "build": "How to build and preview locally, and what the build produces.",
+    "content": "The content model — what a non-developer edits, and where.",
+    "commands": "Every command and what it does. This is the public surface of a CLI; link to the source rather than restating behaviour."
+  },
+  "levels": {
+    "lite": [
+      "README.md",
+      "LICENSE"
+    ],
+    "full": [
+      "README.md",
+      "LICENSE",
+      "CHANGELOG.md",
+      "CONTRIBUTING.md",
+      "SECURITY.md",
+      "CODEOWNERS",
+      "PULL_REQUEST_TEMPLATE.md",
+      "ISSUE_TEMPLATE",
+      "docs/index.md",
+      ".githooks/pre-commit",
+      ".github/workflows/docs.yml"
+    ],
+    "ultra": [
+      "README.md",
+      "LICENSE",
+      "CHANGELOG.md",
+      "CONTRIBUTING.md",
+      "SECURITY.md",
+      "CODEOWNERS",
+      "PULL_REQUEST_TEMPLATE.md",
+      "ISSUE_TEMPLATE",
+      "docs/index.md",
+      ".githooks/pre-commit",
+      ".github/workflows/docs.yml",
+      "docs/adr"
+    ]
+  },
+  "org_level": [
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "PULL_REQUEST_TEMPLATE.md",
+    "ISSUE_TEMPLATE",
+    "profile/README.md"
+  ],
+  "canon": {
+    "ISSUE_TEMPLATE/dev-task.yml": ".github/ISSUE_TEMPLATE/dev-task.yml",
+    "ISSUE_TEMPLATE/owner-task.yml": ".github/ISSUE_TEMPLATE/owner-task.yml",
+    "ISSUE_TEMPLATE/config.yml": ".github/ISSUE_TEMPLATE/config.yml",
+    "PULL_REQUEST_TEMPLATE.md": ".github/PULL_REQUEST_TEMPLATE.md",
+    "CODEOWNERS": ".github/CODEOWNERS",
+    "LICENSE.proprietary": "LICENSE",
+    "CHANGELOG.skeleton.md": "CHANGELOG.md",
+    "pre-commit": ".githooks/pre-commit",
+    "workflows/docs.yml": ".github/workflows/docs.yml",
+    "repo-docs.py": ".github/repo-docs.py"
+  },
+  "canon_seed_only": [
+    "LICENSE.proprietary",
+    "CHANGELOG.skeleton.md"
+  ],
+  "canon_no_harvest": [
+    "repo-docs.py",
+    "workflows/docs.yml",
+    "CHANGELOG.skeleton.md"
+  ],
+  "health_dirs": [
+    ".github",
+    ".",
+    "docs"
+  ],
+  "health_names": [
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "CODE_OF_CONDUCT.md",
+    "SUPPORT.md",
+    "GOVERNANCE.md",
+    "CODEOWNERS",
+    "PULL_REQUEST_TEMPLATE.md"
+  ],
+  "_comment_leak": "Universal: anything that discloses infrastructure or identity on a public repo.",
+  "internal_patterns": [
+    [
+      "Proton Pass|1Password|Bitwarden|KeePass|vault\\s*=",
+      "names the secrets vault"
+    ],
+    [
+      "127\\.0\\.0\\.1|localhost:\\d+",
+      "names local bind addresses"
+    ],
+    [
+      "^\\s*- \\[ \\]",
+      "unchecked hardening item — publishes what is not yet defended"
+    ],
+    [
+      "/srv/|/home/\\w+/",
+      "absolute host path"
+    ]
+  ],
+  "name_allow": [
+    "CONTRIBUTORS.md",
+    "LICENSE",
+    "AUTHORS.md",
+    "CHANGELOG.md",
+    "LICENSING.md"
+  ],
+  "names": [],
+  "claim_boxes": [],
+  "_comment_policy": "Null means the engine has no opinion. An owner's profile supplies one.",
+  "licence_posture": null,
+  "doc_language": null,
+  "stack_version_components": {},
+  "es_stopwords": [
+    "de",
+    "la",
+    "el",
+    "los",
+    "las",
+    "para",
+    "con",
+    "una",
+    "del",
+    "que",
+    "por",
+    "y"
+  ],
+  "_comment_declared": "Archetype is inferred from stack markers. Where no marker can tell (a CLI looks like a library), a profile declares it outright."
+}
