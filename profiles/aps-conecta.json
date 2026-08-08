@@ -3,7 +3,7 @@
   "org": "APS-Conecta",
   "holder": "Daniel Espinoza Charrier",
   "exemplar": "gestion",
-  "_comment_licence": "ADR 0009 supersedes 0007: AGPL-3.0-or-later across every repo. The apps link @nextcloud/vue (AGPL), so the obligation is inherited, not chosen.",
+  "_comment_licence": "ADR 0010 supersedes 0007: AGPL-3.0-or-later across every repo. The apps link @nextcloud/vue (AGPL), so the obligation is inherited, not chosen.",
   "licence_posture": "agpl",
   "_comment_language": "Repo docs English. Only the org profile/README.md is bilingual ES/EN.",
   "doc_language": "en",
