@@ -350,7 +350,7 @@ def inventory(repo: Path) -> list:
         try:
             for pkg in json.loads(lock.read_text(errors="replace")).get("packages", []):
                 out.append((pkg.get("name", "?"), norm_licence(" ".join(pkg.get("license", []))),
-                            "composer.lock"))
+                            "composer.lock", "runtime"))
         except ValueError:
             pass
     pj = repo / "package.json"
@@ -359,7 +359,8 @@ def inventory(repo: Path) -> list:
             d = json.loads(pj.read_text(errors="replace"))
         except ValueError:
             d = {}
-        for name in list(d.get("dependencies", {})) + list(d.get("devDependencies", {})):
+        for name, phase in ([(n, "runtime") for n in d.get("dependencies", {})]
+                            + [(n, "dev") for n in d.get("devDependencies", {})]):
             meta = repo / "node_modules" / name / "package.json"
             lic = None
             if meta.exists():
@@ -367,15 +368,15 @@ def inventory(repo: Path) -> list:
                     lic = json.loads(meta.read_text(errors="replace")).get("license")
                 except ValueError:
                     lic = None
-            out.append((name, norm_licence(lic) if lic else None, "package.json"))
+            out.append((name, norm_licence(lic) if lic else None, "package.json", phase))
     for sub in sorted((repo / "apps").glob("*")) if (repo / "apps").is_dir() else []:
         if sub.is_dir() and not (sub / ".git").exists():
             k = license_kind(sub)
             if k:
-                out.append((f"apps/{sub.name}", k, "vendored"))
+                out.append((f"apps/{sub.name}", k, "vendored", "runtime"))
     for m in re.finditer(r"image:\s*([\w./-]+):", (repo / "compose.yaml").read_text(errors="replace")
                          if (repo / "compose.yaml").exists() else ""):
-        out.append((m.group(1), None, "compose image"))
+        out.append((m.group(1), None, "compose image", "runtime"))
     return out
 
 
@@ -697,8 +698,8 @@ def _r_missing(ctx):
 @rule("license-posture", "error")
 def _r_licence(ctx):
     want = P.get("licence_posture")
-    if not want:
-        return                      # this owner declared no posture; nothing to enforce
+    if not want or ctx["facts"]["archetype"] == "org-profile":
+        return                      # no posture declared, or a profile repo that ships no code
     kind = ctx["facts"]["license_kind"]
     if kind is None:
         yield Finding("license-posture", "error", "LICENSE", None,
@@ -733,9 +734,12 @@ def _r_licence_sites(ctx):
 def _r_licence_inventory(ctx):
     """Third-party licences present in the tree must appear in the notices document,
     and the notices document must not name components that are gone."""
-    doc = P.get("notices_doc")
+    docs_ = P.get("notices_doc")
+    docs_ = [docs_] if isinstance(docs_, str) else (docs_ or [])
+    doc = next((d for d in docs_ if (ctx["path"] / d).exists()), docs_[0] if docs_ else None)
     inv = inventory(ctx["path"])
-    unknown = [c for c, lic, _ in inv if lic is None]
+    inv = [t for t in inv if t[3] == "runtime"]   # dev deps are never distributed
+    unknown = [c for c, lic, _, _ in inv if lic is None]
     if unknown:
         yield Finding("licence-inventory", "warn", None, None,
                       f"{len(unknown)} dependencies have no machine-readable licence "
@@ -746,7 +750,7 @@ def _r_licence_inventory(ctx):
                           f"{len(inv)} third-party components and no notices document")
         return
     text = (ctx["path"] / doc).read_text(errors="replace").lower()
-    families = sorted({lic for _, lic, _ in inv if lic})
+    families = sorted({lic for _, lic, _, _ in inv if lic})
     for fam in families:
         if fam not in text:
             yield Finding("licence-inventory", "warn", doc, None,
@@ -760,7 +764,9 @@ def _r_copyleft(ctx):
     if P.get("licence_posture") != "proprietary":
         return
     hits = {}
-    for comp, lic, src in inventory(ctx["path"]):
+    for comp, lic, src, phase in inventory(ctx["path"]):
+        if phase != "runtime":
+            continue
         if lic in (P.get("copyleft") or []):
             hits.setdefault(lic, []).append(comp)
     for lic, comps in sorted(hits.items()):
@@ -1440,8 +1446,8 @@ def main(argv=None):
             print(f"  {kind or '?':<12} {where}")
         inv = inventory(repo)
         fams = {}
-        for comp, lic, src in inv:
-            fams.setdefault(lic or "unknown", []).append(comp)
+        for comp, lic, src, phase in inv:
+            fams.setdefault(f"{lic or 'unknown'} ({phase})", []).append(comp)
         print(f"\nthird-party ({len(inv)} components):")
         for fam, comps in sorted(fams.items(), key=lambda kv: -len(kv[1])):
             print(f"  {fam:<12} {len(comps):>3}  {', '.join(sorted(comps)[:4])}"

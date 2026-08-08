@@ -3,8 +3,8 @@
   "org": "APS-Conecta",
   "holder": "Daniel Espinoza Charrier",
   "exemplar": "gestion",
-  "_comment_licence": "ADR 0007 — everything we produce is proprietary; what we consume is not.",
-  "licence_posture": "proprietary",
+  "_comment_licence": "ADR 0009 supersedes 0007: AGPL-3.0-or-later across every repo. The apps link @nextcloud/vue (AGPL), so the obligation is inherited, not chosen.",
+  "licence_posture": "agpl",
   "_comment_language": "Repo docs English. Only the org profile/README.md is bilingual ES/EN.",
   "doc_language": "en",
   "stack_markers": {
@@ -55,7 +55,10 @@
       "secret-scanning"
     ]
   ],
-  "notices_doc": "docs/LICENSING.md",
+  "notices_doc": [
+    "THIRD-PARTY-NOTICES.md",
+    "docs/LICENSING.md"
+  ],
   "_comment_copyleft": "Copyleft families that need a human call under a proprietary posture.",
   "copyleft": [
     "agpl",
@@ -66,6 +69,8 @@
   ],
   "_comment_root": "Where the clones live is machine-local, not policy: see config.json.",
   "repo_archetypes": {
-    "repo-docs": "cli"
+    "repo-docs": "cli",
+    "aps-conecta-web": "website",
+    "common": "library"
   }
 }

@@ -20,7 +20,7 @@ Before adding anything, decide which layer it belongs to ([ADR 0002](docs/adr/00
 
 - **Craft** — true of documentation anywhere. A broken link is broken in any repository. Goes in
   `scripts/docs.py` as a rule.
-- **Decision** — what this organisation chose. That our code is proprietary, that our docs are in
+- **Decision** — what this organisation chose. That our code is AGPL-3.0-or-later, that our docs are in
   English. Goes in `profiles/aps-conecta.json` as data.
 
 A rule that hardcodes a decision is the mistake to avoid; it is how the licence rule earned its

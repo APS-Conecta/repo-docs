@@ -94,7 +94,7 @@ The axis that separates the engine from a Profile.
 without a status cannot be superseded, a documented command that does not exist is a lie, a Claim
 must match its Authority. Craft has no opinions about licences or languages.
 
-**Decision** is what one organisation chose: that its code is proprietary, that its docs are in
+**Decision** is what one organisation chose: that its code is AGPL, that its docs are in
 English, that a Nextcloud app is a recognised Archetype. Every rule in the engine is Craft; every
 rule's parameters are Decision.
 
