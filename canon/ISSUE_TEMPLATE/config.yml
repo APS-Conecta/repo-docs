@@ -1,5 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: Cómo trabajamos / How we work
-    url: https://github.com/$org/$repo/blob/main/CONTRIBUTING.md
+    # The ORG copy, not $repo's. Most repositories deliberately have no local CONTRIBUTING.md — they
+    # inherit this one (ADR-0012 in gestion) — so $repo pointed at a file that will never exist.
+    url: https://github.com/$org/.github/blob/main/CONTRIBUTING.md
     about: Workflow, PR gate, Conventional Commits, and documentation rules.

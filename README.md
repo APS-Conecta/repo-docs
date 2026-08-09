@@ -115,6 +115,9 @@ Changing a rule therefore changes every repository's gate at the next `--fix`. R
 ## Licence
 
 GNU Affero General Public License v3.0 or later — see [`LICENSE`](LICENSE). This matches the
-organisation-wide posture recorded in `aps-conecta-web/docs/adr/0010-agpl-across-the-org.md`. The
+organisation-wide posture recorded in
+[gestion ADR-0010](https://github.com/APS-Conecta/gestion/blob/main/docs/adr/0010-agpl-across-the-org.md),
+which moved there from `aps-conecta-web` on 2026-08-08 because an org-wide decision does not live in
+one product's repository. The
 tool depends on nothing outside the Python standard library, so there are no third-party notices to
 carry.

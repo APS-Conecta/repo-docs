@@ -11,9 +11,8 @@ organisation defaults from a public `.github` repository.
 1. Branch off the default branch, short-lived: `feat/…`, `fix/…`, `docs/…`, `chore/…`.
 2. Commit with [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:`,
    `docs:`, `chore:`, `test:`, `refactor:`.
-3. Open a PR. **One human approval before merge.** This gate is team convention — GitHub's free
-   plan does not enforce branch protection on private repositories — so respect it rather than
-   rely on it.
+3. Open a PR. **One human approval before merge**, and treat that as binding whether or not any
+   tooling stops you.
 4. AI-assisted PRs are labelled `ai-assisted` and disclose the involvement in the description.
 5. Run the repository's own gate before opening the PR. CI runs the same checks.
 
@@ -44,16 +43,26 @@ changelogs — is exempt; its date is the label.
 
 ## Decisions
 
-Architectural decisions are recorded as ADRs under `docs/adr/`, numbered sequentially from `0001`,
-following [MADR](https://adr.github.io/madr/). `Status:` is mandatory. Superseded ADRs stay in place
-and link forward — a deleted ADR is a deleted reason.
+Architectural decisions are recorded as ADRs under `docs/adr/`, following
+[MADR](https://adr.github.io/madr/). `Status:` is mandatory. Superseded ADRs stay in place and link
+forward — a deleted ADR is a deleted reason.
+
+A number is unique inside its own repository and means nothing outside one, so numbers are never
+reused and never renumbered, and a series may carry permanent gaps. Cite an ADR from another
+repository by naming that repository, with an absolute URL — never a relative path, which depends on
+where someone happened to clone things. A decision affecting the whole organisation belongs in the
+trunk repository rather than in the first product that needed it.
 
 ## Licensing
 
-Everything `$org` produces is **proprietary, all rights reserved**. The dependencies it builds on
-are open source and self-hosted. Contributions are accepted on that basis. Do not add an
-open-source licence file to a repository, and do not describe this organisation's own code as open
-source.
+Everything `$org` produces is **AGPL-3.0-or-later**. The dependencies it builds on are open source
+and self-hosted, and because the Nextcloud apps link `@nextcloud/vue` the obligation is inherited
+rather than chosen. Contributions are accepted on that basis: by contributing, you license your work
+under the same terms.
+
+Every repository carries one identical `LICENSE`, and the same identifier must appear in
+`appinfo/info.xml`, `composer.json` and `package.json` wherever those exist. The brand marks — logo,
+mono logo, lockup and favicon — are reserved under AGPL §7(e); the licence does not hand them over.
 
 ## Security
 

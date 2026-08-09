@@ -1,5 +1,5 @@
 name: Dev task / bug
-description: Technical task or bug for the developers (references epics/stories/ADRs; assumes make test/smoke fluency).
+description: Technical task or bug for the developers (references epics/stories/ADRs; assumes fluency with this repository's own gate).
 title: "[dev]: "
 body:
   - type: dropdown
@@ -25,7 +25,7 @@ body:
     id: refs
     attributes:
       label: References
-      description: Related epic / story / ADR — e.g. `Story 3.2`, `AD-5`, `docs/ARCHITECTURE.md`.
+      description: Related epic / story / ADR. Name the repository if the ADR is not in this one.
   - type: textarea
     id: repro
     attributes:
@@ -35,6 +35,6 @@ body:
     id: acceptance
     attributes:
       label: Acceptance criteria
-      description: How we'll know it's done (Given/When/Then welcome). Name the gate — e.g. `make test` / `make smoke` green.
+      description: How we'll know it's done (Given/When/Then welcome). Name the gate that proves it, green.
     validations:
       required: true

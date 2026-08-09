@@ -7,6 +7,196 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — third pass: the gate itself was wrong
+
+- **…and once it ran, it failed three repos on a checkout layout.** `gaps()` decided whether an org
+  default was present by looking for a sibling `.github` clone via `discover()`. CI has no sibling
+  clone, so `common`, `epidemiologia` and `territorio` reported `CONTRIBUTING.md` and `SECURITY.md`
+  missing — a verdict about the checkout, not the documentation. Inheritance is now read from the
+  profile's `org_inheritable`, which is where the decision lives, and the *presence* of those files is
+  verified where it belongs: `org_level` requires all five when auditing `.github` itself. Selftest now
+  asserts both halves — `CODEOWNERS` is always a gap when absent because GitHub cannot default it, and
+  `SECURITY.md` must never be reported missing because it is inherited.
+- **The vendored CI gate could never run, in any repository.** `SKILL` was
+  `Path(__file__).parent.parent`, which is right for `repo-docs/scripts/docs.py` and wrong for the copy
+  every repo vendors at `.github/repo-docs.py`: there it resolved `profiles/` to `<repo>/profiles/`,
+  which no repo has. `P` was therefore `{}` and every invocation died in argparse with
+  `KeyError: 'levels'` **before doing any work** — so the `docs` workflow that eight repositories now
+  advertise had never once executed. Not theoretical: the run on `aps-conecta-web` PR #1 failed with
+  exactly that traceback. Resources now resolve from either location, canon vendors
+  `.github/profiles/`, and `canon-drift` — which has no canon beside the vendored copy — prints a SKIP
+  and marks the run degraded instead of comparing nothing and reporting green. Found by the adversarial
+  reviewer of `aps-conecta-web`; the reported "gate after → 0 errors" had come from the *other* binary.
+- **`--fix` rewrote a security claim from a probe that failed.** The `dependabot-alerts` setting
+  probed with `sh(["gh","api",…])` and returned `code == 0`, so a call that never reached GitHub was
+  indistinguishable from *the feature is off* — and because `--fix` rewrites a checklist box to match
+  the probe, one flaky call silently edited `gestion/.github/SECURITY.md` to claim a security feature
+  was **disabled while it was enabled**. Caught by watching the same box flip between two runs. The
+  probe now reads the HTTP status (`204`/`200` on, `404` off, anything else **unknown**), and
+  `claim-boxes` never edits a box from an unknown reading — a stale box is a smaller defect than a
+  confidently wrong one. This is the third place the same root cause appeared: a failed probe must
+  never be readable as an answer.
+- **`dependabot-security-updates` is now its own setting.** gestion's checklist asked for "Dependabot
+  alerts + security updates" on one line, while alerts were **on** and automated fixes were **off** —
+  so the line could not be ticked honestly in either direction. Alerts tell you; updates open the pull
+  request. Two settings, two boxes, both machine-checked.
+- **The issue-form contact link pointed at a file that will never exist.** `canon/ISSUE_TEMPLATE/config.yml`
+  substituted `$org/$repo/blob/main/CONTRIBUTING.md`, but ADR-0012 deliberately leaves most
+  repositories without a local CONTRIBUTING — they inherit the org's. The link was dead in six of
+  eight repos, laid down by `--fix` in the same pass that decided they should not have that file.
+  It now points at the copy that is actually served. `canon/pre-commit` also carries its own
+  executable bit now, rather than relying on the destination chmod alone.
+- **`--fix` installed a hook that could never run.** `scaffold` chmods what it writes; `canon-drift`
+  only wrote the text, so every `.githooks/pre-commit` it installed was **not executable** — 5 of the
+  6 repositories that have one, recorded in git as `100644`, which means every clone got a dead
+  secret-guard while `CONTRIBUTING.md` documented it as a gate. Mode is part of the artifact, so a
+  wrong mode is now drift: `canon_executable` in the profile names which canon needs the bit,
+  `--fix` sets it, and a present-but-inert hook is reported as **NOT EXECUTABLE** rather than passing
+  silently. Found because git itself warned while committing in `analizador-rem`. Asserted in
+  `selftest` in both directions.
+- **A degraded run may no longer be recorded as a baseline.** `gh()` returned `None` on failure and
+  `fact-vs-reality` swallowed every probe exception with a bare `except Exception: continue`, so a
+  flaky API call was indistinguishable from a satisfied check — and `--save-baseline` then wrote the
+  loss down as *resolved*. Caught live: one `--all` run retired four real findings in `gestion`,
+  including both `team_size` mismatches and the Dependabot claim box, all of which reappeared on the
+  next single-repo run. Failures now collect in `DEGRADED`, the run reports them, `--save-baseline`
+  refuses to write, and `--offline --save-baseline` is refused outright because CI deliberately
+  evaluates a subset. The baseline exists to tell a documentation regression from a rule regression;
+  it could not do that while a network hiccup looked like progress. Taught by `gestion`.
+- **The licence posture is AGPL in the prose too.** `SKILL.md`, `references/conventions.md` and the
+  org-default `public/CONTRIBUTING.md` still enforced ADR 0007's proprietary posture after ADR 0010
+  superseded it: `d1e007a` switched the engine and left every sentence describing it. New
+  **`licence-prose`** (error) — a governed doc that describes our own code as proprietary now fails,
+  with the brand carve-out (marks are reserved under AGPL §7(e), correctly) and prohibitions
+  excluded, since neither is a claim. Four declarations of the licence were being verified and the
+  sentence next to them was not. Taught by `repo-docs` itself, which reported 0 errors while
+  contradicting its own profile, and by `.github/profile/README.md` — the organisation's only
+  public page, which called the code proprietary four times.
+- **`discover` no longer reports an unreadable repository as an absent one.** `apps/` is chowned to
+  the container uid so Nextcloud can write it, which makes host git refuse those clones as "dubious
+  ownership"; every git call then failed identically to having no remote, so the repo dropped out of
+  the audit and the run still exited green. `territorio` and `analizador-rem` had therefore never
+  been audited at all — 63 findings between them on first sight, including a `README.md` link
+  broken exactly like `epidemiologia`'s. `sh()` now scopes `safe.directory` to the path it was asked
+  about, and `discover` reports `unreadable` separately. Taught by `territorio` and `analizador-rem`.
+- **The default branch is not the checked-out branch.** `canon_vars`, the `pr` base and
+  `branch-name` all read `HEAD`, so working on a feature branch — the only way `CONTRIBUTING.md`
+  allows anyone to work — baked that branch's name into `docs.yml` on `--fix`, and would have opened
+  a pull request against itself. New `default_branch` fact, resolved from `origin/HEAD`, then
+  `origin/main` or `origin/master`, falling back to `HEAD`; `origin/HEAD` is unset in half these
+  clones. Taught by this branch.
+- **`doc-language` honours the deliberate exceptions.** `gestion` was reported as mixed because of
+  `docs/CONVENTIONS.md`, `docs/BRANDING.md` and `themes/apsconecta/MAPEO.md`, which `AGENTS.md`
+  names as deliberately Spanish, and because of a glossary *of* Spanish domain terms — reference
+  material about Spanish, not documentation written in it. Which documents those are is a decision,
+  so the list lives in the profile as `doc_language_exempt`. Taught by `gestion` and
+  `analizador-rem`, whose other three Spanish documents remain findings.
+- **`--org` published canon that must never be public.** `canon-drift` ignored org mode, so `--fix`
+  on the world-readable `.github` repository added `CODEOWNERS` — naming three accounts, two of which
+  have no access to anything — plus the pre-commit hook, the docs workflow and a full copy of the
+  engine. GitHub can inherit none of those regardless. A `canon_org` list now names the only four
+  canon files publishable there, and `canon/CODEOWNERS` carries one owner from `code_owners` in the
+  profile, since who reviews is a decision. Its comment no longer explains which review rule cannot
+  be enforced. Taught by `.github`.
+- **The org repository published `$PLACEHOLDER` as its CONTRIBUTING and SECURITY.** `scaffold`'s gap
+  loop wrote the placeholder stub first, so the block that copies the authored documents out of
+  `public/` found the file already present and never fired — dead code from the day it was written.
+  Nothing caught it: an untracked file is not governed, so the placeholder was invisible to `check`
+  until the commit that published it. The gap loop now prefers `public/` in org mode. Taught by
+  `.github`, one commit before the world would have read it.
+- **`profile/README.md` was required and undetectable.** The org level lists it among the required
+  files, but `find_health` never looked for it, so `missing-required` reported the organisation's only
+  document as absent while it sat in the tree. Taught by `.github`.
+- **A tracked file the working tree lacks is reported, not crashed on.** `doc_lang` reads every
+  governed file, so one tracked-but-deleted document — mid-rename, or a deletion not yet staged —
+  ended the entire run in a traceback. New `tracked-not-present` (error), and `governed()` no longer
+  returns paths that are not there.
+- **The canon templates stopped assuming `gestion`.** The pull-request template asserted that
+  `make test` passes "the same script `.github/workflows/ci.yml` runs", and the dev-task form
+  described itself as assuming "make test/smoke fluency" and cited `AD-5` as an example reference.
+  These are Mechanical files, identical across the organisation by definition, and they are served to
+  a Python CLI and a PHP library that have neither a Makefile nor an `AD-` series.
+- **The canon licence was still the proprietary one.** `_base.json` mapped
+  `canon/LICENSE.proprietary` → `LICENSE`, so scaffolding any repository that lacked one would have
+  handed it an all-rights-reserved licence *under the AGPL posture* — and `license-posture` would
+  then have failed that same repository on the next run. Nothing referenced the file except the canon
+  map, which is how it survived the relicence unnoticed. Canon now holds the AGPL-3.0 text itself,
+  byte-identical to the one all seven code repositories ship (verified 2026-08-08), under the
+  posture-neutral name `LICENSE`.
+- **`orphan-reference` reads code voice, not prose.** It flags a document mentioning an app concept
+  under `custom apps/` that has no repository — but "Farmacia" in `gestion/docs/CONVENTIONS.md` is an
+  item in a Spanish list of clinic units (SOME, Dental, OIRS, Estadística-REM, Dirección): a pharmacy,
+  not a missing repository. The engine already held the right craft for this, one rule away — *"`make
+  it` in code voice is a command, 'make it' in prose is the English verb"* — so the name must now
+  appear in backticks or beside a project word. Taught by `gestion`.
+- **`adr-status` looks for the forward link in the paragraph, not the line.** `gestion`'s ADR-0002 is
+  superseded on one half and links forward to `ADR-0000 §AD-5` — on the following line, because
+  Markdown prose wraps. The rule demanded the link on the same line as the word "superseded", so a
+  correctly-linked ADR was reported as unlinked. Taught by `gestion`.
+- **`licence-prose` does not fire on past tense.** "our own output *was* proprietary" recounts;
+  "our own output *is* proprietary" asserts. Two paragraphs of `docs/LICENSING.md` explaining the trade
+  ADR-0010 made were flagged as though they were making it. Note this is the opposite call to
+  `RETIRED`, where `was` was removed for matching ordinary prose: there the word had to prove a
+  retirement anywhere in a sentence, here the sentence is already about our licence and tense is all
+  that remains to read. Taught by `gestion`.
+- **`absolute-path` no longer flags a path named as off-limits.** `AGENTS.md` has a "Do not touch"
+  section whose entire purpose is to name `/srv/syncthing/CESFAMS` so that no agent writes there;
+  making that path portable would have deleted the warning it exists to give. Now heading-aware.
+  Taught by `gestion`.
+
+### Fixed — fourth pass: what an independent audit of this tool found
+
+Ten explorer agents mapped the organisation and an adversarial critic re-ran every claim. Most of what
+they found was in here, not in the documentation.
+
+- **The 2FA pre-flight failed OPEN, and ADR 0003 claimed it was asserted.** `_guard_2fa` returned
+  `[m for m in str(out or "").split()]`, and `gh()` returns `None` on failure — so a request that
+  never reached GitHub read as *"nobody lacks 2FA"* and the tool would have gone on to enforce it.
+  Enforcing removes every member without 2FA; this organisation has **one** member. A flaky network
+  could have cost the owner the organisation. It now fails closed, and `selftest` asserts both
+  directions — verified by reverting the guard and watching the assertion fail. ADR 0003 said this
+  was "asserted in the selftest and must never become advisory" while nothing asserted it.
+- **`required()` and `public-leak` keyed on an operator flag instead of the archetype.** `check --all`
+  passes one `--org` for eight repositories, so a sweep could never be right about both the org repo
+  and the other seven: it demanded a `LICENSE` and `CODEOWNERS` that `references/layout.md` forbids
+  there, while identifying the repo *by* the `profile/README.md` it reported missing. Worse,
+  `public-leak` returned early unless `--org` — so during every `--all` run the leak rule was **off
+  for the only world-readable repository in the organisation**. Both now derive from the archetype.
+- **Skipped rules were counted as resolved.** An `--offline` sweep printed
+  `SKIP branch-name` and `RESOLVED branch-name … default branch is 'master'` in the same run, while
+  the branch was still `master`. A rule that did not run knows nothing: its prior findings are now
+  reported `UNKNOWN`, never resolved, and the run is marked degraded.
+- **`missing-required` ignored what the organisation actually serves.** GitHub applies the public
+  `.github` repo's CONTRIBUTING, SECURITY, issue forms and PR template to every repository lacking its
+  own, so demanding a local copy asked for the DRY violation the org-before-repo rule exists to
+  prevent. `gaps()` now counts an org default as present, from `org_inheritable` in the profile.
+  Closed roughly sixty findings that were never defects. CODEOWNERS, workflows and hooks stay
+  per-repo, because GitHub cannot inherit those.
+- **Dated history is no longer read as making a claim.** `_claims()` scanned CHANGELOG, BUGS, ROADMAP
+  and ADRs, so the changelog entry *retiring* the three-person team — which has to quote
+  `"as fast as a 3-person team can"` in order to retire it — was itself reported as a contradiction.
+- **`licence-prose` exempts the notices document,** which exists to reproduce other people's licence
+  text, much of it reserving rights over work that is not ours.
+- **The nested-repo boundary tested only the first path segment.** All three app clones live at
+  `apps/<id>`, so `r.split("/")[0]` asked whether `apps/.git` existed. It does not, and the boundary
+  held by luck alone: gestion tracks nothing under `apps/`. `CONTEXT.md` promises it unconditionally.
+- **New `github-metadata` (error).** A repository description is the most-read documentation it has —
+  it appears in every list, every search result and on the organisation's front page — and nothing
+  governed it. On first run: three descriptions presumed a single clinic, two were Spanish under an
+  English-docs policy, and `territorio` had none at all. Taught by the whole org at once.
+
+### Removed — third pass
+
+- **`licence-copyleft`.** It asked whether copyleft dependencies were safe under a *proprietary*
+  posture; ADR 0010 made the organisation AGPL-3.0-or-later, so its first line returned before the
+  rule could ever fire again. The question that would replace it — is a dependency *incompatible*
+  with AGPL-3.0-or-later, GPL-2.0-only being the one that bites — cannot be asked of `inventory()`,
+  which resolves licences to coarse families: `gpl` alone does not say whether an "or later" option
+  exists to take. Rather than leave a rule that cannot fire, or document a check that cannot run,
+  both are gone and `SKILL.md` now says explicitly that nothing checks it. A comment at the deleted
+  site records what it would take to bring it back. Its `copyleft` profile table went with it, read
+  by nothing once the rule was removed.
+
 ### Added — second pass: authoring, growth, licences
 
 - **Profiles.** Policy left the engine. `profiles/_base.json` holds craft, `profiles/aps-conecta.json`

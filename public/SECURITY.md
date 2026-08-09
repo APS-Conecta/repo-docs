@@ -5,8 +5,9 @@ own `SECURITY.md`, which takes precedence.
 
 ## Scope
 
-`$org` builds internal-operations software for a Chilean CESFAM (primary-healthcare centre):
-documents, coordination and team processes.
+`$org` builds internal-operations software for Chilean CESFAMs (primary-healthcare centres):
+documents, coordination and team processes. Each install serves one establishment, named in that
+install's configuration; the software itself names none.
 
 **These systems hold no patient or clinical data.** Development uses synthetic fixtures only. They
 are not clinical or patient-record systems, and are not intended to become one.

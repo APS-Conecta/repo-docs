@@ -9,7 +9,7 @@ Closes #
 ## Checklist
 
 - [ ] Title follows **Conventional Commits** (`feat:`, `fix:`, `docs:`, `chore:`, `test:`…).
-- [ ] `make test` passes locally (the same script `.github/workflows/ci.yml` runs).
+- [ ] The repository's own gate passes locally — the same one CI runs.
 - [ ] Docs updated where a fact changed (one owner per fact — no duplication).
 - [ ] Small and reviewable; **1 approval** before merge.
 

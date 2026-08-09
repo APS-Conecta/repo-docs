@@ -62,17 +62,22 @@ is reference material about Spanish, not documentation written in it.
 
 ## Licence posture
 
-Proprietary org-wide (ADR 0007, `aps-conecta-web/docs/adr/0007-proprietary-across-the-org.md`).
-Everything APS Conecta produces is all-rights-reserved; the dependencies it consumes are open
-source. "We use only open source" describes what the project *consumes*, never how it licenses its
-own work.
+**AGPL-3.0-or-later org-wide** ([ADR 0010](https://github.com/APS-Conecta/gestion/blob/main/docs/adr/0010-agpl-across-the-org.md),
+superseding ADR 0007). Inherited rather than chosen: the Nextcloud apps compile `@nextcloud/vue`
+(AGPL-3.0-or-later) into the bundles they ship. "We use only open source" describes what the project
+*consumes*; since ADR 0010 it describes what the project *produces* too.
+
+The identity is protected by **trademark, not copyright**: logo, mono logo, lockup and favicon are all
+rights reserved with the marks reserved under AGPL §7(e). Colour tokens ship under the AGPL — colour
+values are functional data and copyright barely reaches them.
 
 Third-party notices license other people's work and stay — `gestion/docs/LICENSING.md` is the full
 audit. A licence name appearing in a doc is only *our* claim when the line self-refers ("our",
 "this project", a `Licence:` label). "Apache-dependent" in `epidemiologia` means the web server.
 
-Open: `analizador-rem` and `epidemiologia` both ship **AGPL-3.0**; `territorio`, `common` and
-`aps-conecta-web` ship no `LICENSE` at all. ADR 0007 requires reconciling all five.
+Closed: the five repositories ADR 0007 left unreconciled — `analizador-rem`, `epidemiologia`,
+`territorio`, `common`, `aps-conecta-web` — all now declare AGPL-3.0-or-later, verified against
+GitHub on 2026-08-08.
 
 ## Reference documentation
 

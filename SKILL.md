@@ -71,15 +71,21 @@ and say so.
 One repo, one licence — declared identically in `LICENSE`, `appinfo/info.xml`, `composer.json`
 and `package.json`. Those are four declarations of the same fact, read by four different tools.
 Third-party licences are inventoried from what is installed, not from memory, and the notices
-document must match. Copyleft under a proprietary posture is reported for a human to judge:
-running alongside AGPL software is not the same as linking it.
+document must match. Copyleft in a dependency no longer conflicts with our own posture. What would
+need a human call is a dependency *incompatible* with AGPL-3.0-or-later — GPL-2.0-only is the case
+that bites, having no "or later" to take — and **no rule checks this**: `inventory` resolves licences
+to coarse families, and `gpl` alone does not say which. Running alongside software is not the same as
+linking it, and that distinction decides whether the question arises at all.
 
 Never document a command that does not exist, and never document one no gate runs. A mention of
 something retired must say so within its own paragraph; dated history — ADRs, changelogs, bug
 logs — is exempt, its date is the label.
 
-Licence posture is proprietary org-wide (ADR 0007). Never emit MIT/Apache/AGPL for our own code.
-Third-party notices are someone else's licence and stay.
+Licence posture is **AGPL-3.0-or-later** org-wide — inherited, not chosen: the apps link
+`@nextcloud/vue`. See [ADR 0010](https://github.com/APS-Conecta/gestion/blob/main/docs/adr/0010-agpl-across-the-org.md),
+which superseded the proprietary posture of ADR 0007. Never emit MIT, Apache or a proprietary licence
+for our own code. Third-party notices are someone else's licence and stay. The brand marks are carved
+out under AGPL §7(e) — reserved, not relicensed.
 
 Repo docs in English. `profile/README.md` bilingual ES/EN. Spanish clinical terms keep their name
 with a gloss on first use.
@@ -88,18 +94,19 @@ with a gloss on first use.
 ADRs = MADR, sequential, `Status:` mandatory, never renumber, superseded link forward.
 Diátaxis: one page, one mode — never mix tutorial and reference.
 
-Inherited from `gestion/CONTRIBUTING.md`, which owns this doctrine — link, don't restate:
+The seven documentation rules are owned by
+[`gestion/CONTRIBUTING.md`](https://github.com/APS-Conecta/gestion/blob/main/CONTRIBUTING.md) —
+**read them there.** They used to be restated here, directly under the sentence saying "link, don't
+restate", and the two copies had already disagreed about which files count as dated history.
 
-1. Numbered steps, one action each, the exact copyable command.
-2. Every step states expected output and what to do if it fails.
-3. Every command says where it runs — host, or which container as which user.
-4. Never assert what you haven't run.
-5. One owner per fact. Others link.
-6. Prefer generated over hand-written.
-7. Don't copy a gate's count into prose.
+What this engine enforces mechanically, so the rules are not only advice: `phantom-command` and
+`unverified-command` (rule 4), `fact-contradiction` and `fact-vs-reality` (rule 5), `licence-prose`
+and `licence-declaration` (one licence, four declarations), `readme-sections` and
+`unfilled-contract` (the Section Contract), `adr-status` (MADR), `github-metadata` (a description is
+documentation too). Rules 1, 2, 3, 6 and 7 are judgment and are read, never checked.
 
-And: if a doc mentions something retired, it must acknowledge that it is. Dated history — ADRs,
-changelogs — is exempt; its date is the label.
+Dated history is exempt from the retirement rule; `gestion/CONTRIBUTING.md` names which four files
+that means, and `is_history()` matches exactly those.
 
 Reference docs for a library or framework come from **Context7 MCP** (`resolve-library-id` then
 `query-docs`) — never hardcoded. Context7 absent → `WebFetch` the canonical URL. Never a hard
@@ -134,7 +141,7 @@ moving on loses the lesson.
 A rule that has never fired across the org gets deleted — `DENYLIST` was measured at zero
 exclusions and cut. Recurring `audit` findings get promoted to a `@fact` or `@rule`. Extend by
 table: policy in `profiles/*.json` (`stack_markers`, `archetypes`, `section_prompts`, `canon`,
-`levels`, `claim_boxes`, `internal_patterns`, `copyleft`), rules in `CHECKS`, `FACTS`, `SETTINGS`.
+`levels`, `claim_boxes`, `internal_patterns`), rules in `CHECKS`, `FACTS`, `SETTINGS`.
 If tuning needs a function body edited, the seam is wrong; move it into a table first.
 
 `--explain` prints each firing rule's rationale, so a wrong finding names the line to edit.

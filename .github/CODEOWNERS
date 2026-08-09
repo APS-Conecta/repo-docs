@@ -1,7 +1,8 @@
 # CODEOWNERS — review routing for APS-Conecta/repo-docs.
 #
-# One rule: all three members own every path. GitHub never requests a PR's own
-# author, so each PR auto-requests review from the other two. This backs the
-# 1-approval convention gate documented in CONTRIBUTING.md (a free-plan private
-# repo can't *enforce* code-owner review, so this only auto-requests reviewers).
-* @juliomosorio @mmaartinn @ddespinoza
+# Every path is owned by @ddespinoza. GitHub never requests review from a pull request's own
+# author, so with a single owner this routes nothing today. It is here so that the day a second
+# account is added, review is requested automatically rather than depending on someone remembering
+# to create this file. CODEOWNERS cannot be inherited from the organisation's .github repository,
+# so each repository carries its own copy.
+* @ddespinoza
