@@ -15,6 +15,8 @@
   decisions live in a profile
 - [ADR 0003](adr/0003-the-tool-changes-github-settings.md) — a documentation tool changes GitHub
   settings, and what fences the irreversible one
+- [ADR 0004](adr/0004-the-checker-is-vendored-into-every-repo.md) — the checker is vendored into
+  every repository, because CI cannot reach this one
 
 ## Reference
 

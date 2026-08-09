@@ -1,7 +1,8 @@
 # Changelog — repo-docs
 
-Tuning log. One line per rule change, naming the repo that taught it. The skill stays short because
-its history lives here.
+Tuning log. One entry per rule change, naming the repo that taught it: the symptom, the root cause,
+and how it was caught. The skill stays short because its history lives here — and the "how it was
+caught" is the part that stops a defect recurring, so entries are as long as that takes.
 
 Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 

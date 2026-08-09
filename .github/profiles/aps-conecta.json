@@ -7,11 +7,9 @@
   "licence_posture": "agpl",
   "_comment_language": "Repo docs English. Only the org profile/README.md is bilingual ES/EN.",
   "doc_language": "en",
-  "_comment_language_exempt": "Deliberately Spanish, named as such in gestion/AGENTS.md: the staff-facing conventions, the two brand documents authored with the brand kit, and a glossary OF Spanish domain terms — reference material about Spanish, not documentation written in it. Everything else in Spanish is a finding.",
+  "_comment_language_exempt": "Deliberately Spanish, named as such in gestion/AGENTS.md: a doc is exempt when its READER is Spanish-speaking (the staff-facing conventions) or when Spanish is its SUBJECT (a glossary OF Spanish domain terms — reference material about Spanish, not documentation written in it). BRANDING.md and MAPEO.md were exempt as 'authored with the brand kit' and were translated on 2026-08-09: their reader deploys or edits the theme, which is a developer. Everything else in Spanish is a finding.",
   "doc_language_exempt": [
     "docs/CONVENTIONS.md",
-    "docs/BRANDING.md",
-    "MAPEO.md",
     "GLOSARIO.md"
   ],
   "stack_markers": {
@@ -70,7 +68,7 @@
     "THIRD-PARTY-NOTICES.md",
     "docs/LICENSING.md"
   ],
-  "_comment_single_tenant": "Wording that presumes one clinic where the software is multi-site: sites/<slug>/site.sh, a 2655-row DEIS register, and epidemiologia ADR-0003 (establishment is instance configuration). 'CESFAM' as a clinic TYPE is correct and must not match.",
+  "_comment_single_tenant": "Wording that presumes one clinic where the software is multi-site: sites/<slug>/site.sh, a 2655-row DEIS register, and gestion ADR-0013 (the establishment is instance configuration; moved out of epidemiologia 2026-08-09). 'CESFAM' as a clinic TYPE is correct and must not match.",
   "single_tenant": [
     ["\\bfor a\\b[^.]{0,40}CESFAM", "presumes a single clinic"],
     ["para un CESFAM", "presumes a single clinic"],

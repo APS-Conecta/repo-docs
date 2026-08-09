@@ -1,6 +1,7 @@
 # Documentation gate. Offline rules only — GITHUB_TOKEN is repo-scoped and cannot read
 # org facts (2FA, member list), so those rules run locally under your own gh auth.
-# The checker is vendored at .github/repo-docs.py and kept in sync by the canon-drift rule.
+# Why the checker is vendored at .github/repo-docs.py, and how it fails: repo-docs ADR-0004
+# https://github.com/APS-Conecta/repo-docs/blob/main/docs/adr/0004-the-checker-is-vendored-into-every-repo.md
 name: docs
 
 on:
