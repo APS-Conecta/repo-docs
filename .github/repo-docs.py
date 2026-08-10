@@ -149,8 +149,8 @@ def sh(argv, cwd=None):
     if argv and argv[0] == "git" and "-C" in argv:
         # `apps/` is chowned to the container uid (33) so Nextcloud can write it, which makes host
         # git refuse those clones as "dubious ownership". Every git call then fails identically to
-        # having no remote, so the repo left the audit reading as absent — territorio and
-        # analizador-rem were unaudited this way. Scoped to the one path we were asked about, and
+        # having no remote, so the repo left the audit reading as absent — territorio was
+        # unaudited this way. Scoped to the one path we were asked about, and
         # only ever for reads.
         argv = [argv[0], "-c", f"safe.directory={argv[argv.index('-C') + 1]}"] + argv[1:]
     p = subprocess.run(argv, cwd=str(cwd) if cwd else None,
@@ -1326,7 +1326,7 @@ RATIONALE = {
     "personal-data": "Names and personal addresses belong in CONTRIBUTORS/LICENSE only.",
     "doc-language": "Repo docs English; only the org profile is bilingual.",
     "nested-repo": "epidemiologia sits inside gestion/apps with no .gitmodules.",
-    "branch-name": "analizador-rem is on master; the rest are on main.",
+    "branch-name": "Every repo is on main; another default is a drift signal.",
 }
 
 
@@ -1449,7 +1449,7 @@ def check(repo: Path, level="full", org_mode=False, offline=False, fix=False,
     for name, severity, is_offline, fn in CHECKS:
         if offline and not is_offline:
             # A skipped rule knows nothing. Recording it as degraded stops the baseline diff calling
-            # its findings "resolved" — which it did, reporting analizador-rem's `master` default
+            # its findings "resolved" — which it did, reporting a non-`main` default
             # branch as fixed in the same run that printed SKIP for the rule that finds it.
             print(f"SKIP    {name:<20} needs org-scoped auth (--offline)")
             DEGRADED.append(f"rule {name!r}: skipped (--offline)")

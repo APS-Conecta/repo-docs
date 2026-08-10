@@ -53,7 +53,7 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
   secret-guard while `CONTRIBUTING.md` documented it as a gate. Mode is part of the artifact, so a
   wrong mode is now drift: `canon_executable` in the profile names which canon needs the bit,
   `--fix` sets it, and a present-but-inert hook is reported as **NOT EXECUTABLE** rather than passing
-  silently. Found because git itself warned while committing in `analizador-rem`. Asserted in
+  silently. Found because git itself warned while committing in a nested clone. Asserted in
   `selftest` in both directions.
 - **A degraded run may no longer be recorded as a baseline.** `gh()` returned `None` on failure and
   `fact-vs-reality` swallowed every probe exception with a bare `except Exception: continue`, so a
@@ -76,10 +76,10 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 - **`discover` no longer reports an unreadable repository as an absent one.** `apps/` is chowned to
   the container uid so Nextcloud can write it, which makes host git refuse those clones as "dubious
   ownership"; every git call then failed identically to having no remote, so the repo dropped out of
-  the audit and the run still exited green. `territorio` and `analizador-rem` had therefore never
+  the audit and the run still exited green. `territorio` and another clone had therefore never
   been audited at all — 63 findings between them on first sight, including a `README.md` link
   broken exactly like `epidemiologia`'s. `sh()` now scopes `safe.directory` to the path it was asked
-  about, and `discover` reports `unreadable` separately. Taught by `territorio` and `analizador-rem`.
+  about, and `discover` reports `unreadable` separately. Taught by `territorio` and another clone.
 - **The default branch is not the checked-out branch.** `canon_vars`, the `pr` base and
   `branch-name` all read `HEAD`, so working on a feature branch — the only way `CONTRIBUTING.md`
   allows anyone to work — baked that branch's name into `docs.yml` on `--fix`, and would have opened
@@ -90,8 +90,8 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
   `docs/CONVENTIONS.md`, `docs/BRANDING.md` and `themes/apsconecta/MAPEO.md`, which `AGENTS.md`
   names as deliberately Spanish, and because of a glossary *of* Spanish domain terms — reference
   material about Spanish, not documentation written in it. Which documents those are is a decision,
-  so the list lives in the profile as `doc_language_exempt`. Taught by `gestion` and
-  `analizador-rem`, whose other three Spanish documents remain findings.
+  so the list lives in the profile as `doc_language_exempt`. Taught by `gestion`, alongside a repo
+  whose other three Spanish documents remained findings.
 - **`--org` published canon that must never be public.** `canon-drift` ignored org mode, so `--fix`
   on the world-readable `.github` repository added `CODEOWNERS` — naming three accounts, two of which
   have no access to anything — plus the pre-commit hook, the docs workflow and a full copy of the
@@ -257,8 +257,7 @@ they found was in here, not in the documentation.
 - Initial skill: `discover` · `scan` · `check` · `audit` · `harvest` · `scaffold` · `settings` ·
   `pr` · `selftest`, with registries `DENYLIST` `STACK_MARKERS` `ARCHETYPES` `CANON` `LEVELS`
   `CHECKS` `FACTS` `SETTINGS` `CLAIM_BOXES`.
-- 16 rules and 5 facts, seeded from defects found in `gestion`, `epidemiologia`, `territorio`
-  and `analizador-rem`.
+- 16 rules and 5 facts, seeded from defects found in `gestion`, `epidemiologia` and `territorio`.
 - `canon/` harvested from `gestion` — issue forms, PR template, CODEOWNERS, proprietary LICENSE,
   pre-commit hook.
 - `public/` — org-safe CONTRIBUTING and SECURITY for the world-readable `.github` repo.
@@ -291,9 +290,9 @@ they found was in here, not in the documentation.
 - `orphan-reference` flagged `Epidemiología` as a repo that does not exist — it is the accented
   local directory name for the repo `epidemiologia`. Comparisons normalise accents and spacing.
   Taught by `epidemiologia`.
-- `license_kind` had no AGPL branch, so `analizador-rem` and `epidemiologia` reported the vague
-  `other` instead of the real finding: both ship **AGPL-3.0**, which ADR 0007 requires reconciling.
-  Taught by `analizador-rem`.
+- `license_kind` had no AGPL branch, so `epidemiologia` reported the vague
+  `other` instead of the real finding: it ships **AGPL-3.0**, which ADR 0007 requires reconciling.
+  Taught by `epidemiologia`.
 - `settings` reported private-vulnerability-reporting and secret-scanning as **FAILED** on
   `gestion`. Both are public-repo features and cannot be enabled on a private repo without
   Advanced Security. They now carry `scope="public"` and report `n/a`, and `claim-boxes` stops

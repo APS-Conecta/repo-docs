@@ -56,10 +56,6 @@ Spanish clinical and domain terms keep their Spanish name with a gloss on first 
 Sanitarias (statutory health targets). Translating them loses the referent; they name real
 institutions and instruments.
 
-`analizador-rem` is the current outlier — `docs/ARQUITECTURA.md`, `DESARROLLO.md`, `ESTADO.md`,
-`GLOSARIO.md` are Spanish. `GLOSARIO.md` arguably should stay: a glossary of Spanish domain terms
-is reference material about Spanish, not documentation written in it.
-
 ## Licence posture
 
 **AGPL-3.0-or-later org-wide** ([ADR 0010](https://github.com/APS-Conecta/gestion/blob/main/docs/adr/0010-agpl-across-the-org.md),
@@ -75,7 +71,7 @@ Third-party notices license other people's work and stay — `gestion/docs/LICEN
 audit. A licence name appearing in a doc is only *our* claim when the line self-refers ("our",
 "this project", a `Licence:` label). "Apache-dependent" in `epidemiologia` means the web server.
 
-Closed: the five repositories ADR 0007 left unreconciled — `analizador-rem`, `epidemiologia`,
+Closed: the four repositories ADR 0007 left unreconciled — `epidemiologia`,
 `territorio`, `common`, `aps-conecta-web` — all now declare AGPL-3.0-or-later, verified against
 GitHub on 2026-08-08.
 
