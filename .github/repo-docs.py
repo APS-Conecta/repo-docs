@@ -11,6 +11,7 @@ Stdlib only. Every subprocess call takes an argv list — paths contain spaces.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -44,6 +45,15 @@ CANON_DIR = _resource("canon")
 PUBLIC_DIR = _resource("public")
 PROFILES = _resource("profiles")
 
+# Which canon this copy of the checker was rendered from. `render` writes the digest here on the way
+# out, so every vendored copy carries one and the copy in canon/ keeps this empty — which is how a
+# canon source says it is the original rather than a render of one. Read by `canon-stamp`.
+#
+# Deliberately not a `string.Template` placeholder: this whole file is rendered, so a placeholder
+# here would also be substituted inside the comparison below that reads it. Every dollar-sigil token
+# in this file is substituted on the way out, which is why none of the prose in it writes one.
+CANON_STAMP = "c0614448c46f"
+
 # ---- craft vs decision (ADR 0002) --------------------------------------------------
 # Every rule below is craft: true of documentation anywhere. Every rule's PARAMETERS are
 # decisions one owner made, and they live in profiles/<owner>.json, never here.
@@ -59,8 +69,16 @@ TABLE_CELL = re.compile(r"^\|([^|\n]+)\|", re.M)
 OFF_LIMITS = re.compile(r"do not touch|don'?t touch|never touch|do not modify|off-limits", re.I)
 PROJECT_VOICE = re.compile(r"\b(app|apps|repo|repos|repositor(?:y|io)|aplicaci[oó]n)\b", re.I)
 OWN_LICENCE = re.compile(r"\bproprietary\b|all rights reserved|todos los derechos|\bpropietario\b", re.I)
+# The organisation name is written out, never as a template placeholder. `render` substitutes with
+# `string.Template`, whose escape for a literal dollar is a doubled dollar and not a backslash, so
+# the backslash form this line used to carry reached every vendored copy with its backslash intact —
+# and a leading backslash-A is the start-of-string anchor, so the alternative matched nothing at all.
+# Writing the name out also makes this line render identically in canon and in every copy, which is
+# what stops the defect coming back. `[- ]` covers both spellings; the lookahead drops
+# `github.com/APS-Conecta/<repo>` URLs, which name a location rather than the subject of a sentence.
+# Asserted both ways in `selftest`.
 SELF_REF = re.compile(r"\bour\b|\bwe\b|this (?:project|organisation|organization|repo)|"
-                      r"APS Conecta|\APS-Conecta|licence:|license:|nuestr|c[oó]digo propio", re.I)
+                      r"APS[- ]Conecta\b(?![-/])|licence:|license:|nuestr|c[oó]digo propio", re.I)
 # The brand marks ARE all-rights-reserved under AGPL 7(e) — that claim is correct and must survive.
 MARKS = re.compile(r"logo|lockup|favicon|wordmark|\bmarks?\b|trademark|§ ?7\(e\)", re.I)
 PROHIBITION = re.compile(r"\bnever\b|\bdo not\b|\bdon'?t\b|\bmust not\b|\bno longer\b", re.I)
@@ -528,10 +546,40 @@ def scan(repo: Path) -> dict:
 
 # ---------------------------------------------------------------- canon
 
+_STAMP_LINE = re.compile(r'^CANON_STAMP = "[^"]*"$', re.M)
+
+
+def _canon_digest(sources: dict) -> str:
+    """sha256[:12] over {canon-relative name: text}, with the stamp line blanked in each first.
+
+    The stamp is written INTO a canon source, so hashing the bytes as they lie makes the digest a
+    function of itself: write the stamp, the digest moves, the stamp is stale again, forever. Blanking
+    the one line is what makes the comparison converge. Every other byte still counts, or the digest
+    would report a canon it never read."""
+    h = hashlib.sha256()
+    for rel in sorted(sources):
+        h.update(rel.encode())
+        h.update(_STAMP_LINE.sub('CANON_STAMP = ""', sources[rel]).encode())
+    return h.hexdigest()[:12]
+
+
+def canon_stamp() -> str:
+    """The digest of canon as it stands — empty when canon is not beside this checker.
+
+    Seeds are excluded. A seed is written once and then belongs to the repository (CONTEXT.md), so
+    editing `canon/LICENSE` is not engine drift and must not age every vendored copy at once."""
+    if not CANON_DIR.is_dir():
+        return ""
+    seeds = set(P.get("canon_seed_only") or ())
+    return _canon_digest({rel: (CANON_DIR / rel).read_text(errors="replace")
+                          for rel in P["canon"]
+                          if rel not in seeds and (CANON_DIR / rel).exists()})
+
+
 def canon_vars(facts: dict) -> dict:
     return {"org": ORG, "repo": facts.get("repo") or "",
             "branch": facts.get("default_branch") or "main",
-            "holder": HOLDER, "year": "2026",
+            "holder": HOLDER, "year": "2026", "canon_stamp": canon_stamp(),
             "code_owners": P.get("code_owners") or ""}
 
 
@@ -555,9 +603,15 @@ def outline(archetype: str, repo_name_: str) -> str:
 
 
 def render(name: str, vars_: dict) -> str:
-    """Unknown $var survives verbatim so it stays visible as unfilled."""
+    """Unknown placeholders survive verbatim so they stay visible as unfilled.
+
+    The canon stamp is written after substitution, not as a placeholder: the checker reads its own
+    `CANON_STAMP` to report what it is, and a placeholder would be substituted inside that comparison
+    too, leaving every stamped copy calling itself unstamped."""
     src = (CANON_DIR / name).read_text()
-    return string.Template(src).safe_substitute(vars_)
+    out = string.Template(src).safe_substitute(vars_)
+    stamp = vars_.get("canon_stamp")
+    return _STAMP_LINE.sub(f'CANON_STAMP = "{stamp}"', out) if stamp else out
 
 
 def harvest(exemplar: Path) -> list:
@@ -1007,6 +1061,38 @@ def _r_canon(ctx):
                           f"differs from canon/{canon_rel} — --fix restores it")
 
 
+@rule("canon-stamp", "warn")
+def _r_canon_stamp(ctx):
+    """`canon-drift` needs both sides, and a vendored copy has only one: no repository carries
+    `canon/` (ADR 0004), so the rule that keeps eight copies from becoming eight versions reports
+    SKIP in the seven places the copies actually live. The stamp is what a copy carries instead —
+    the digest of the canon it was rendered from, written by `render`. Here, where canon IS present,
+    it names *which* engine a repository is on rather than only that its bytes differ; where canon is
+    absent it is at least printed, so a CI log records the version it ran."""
+    want = canon_stamp()
+    rel = P["canon"].get("repo-docs.py")
+    dst = (ctx["path"] / rel) if rel else None
+    have = ""
+    if dst and dst.exists():
+        m = _STAMP_LINE.search(dst.read_text(errors="replace"))
+        have = m.group(0).split('"')[1] if m else ""
+    if not want:
+        # Unevaluated must never read as green (ADR 0004), but the stamp is still a fact worth
+        # printing: it is the only record of which canon this copy came from.
+        DEGRADED.append("rule 'canon-stamp': canon/ is not available to this copy of the checker")
+        SKIPPED_RULES.add("canon-stamp")
+        print(f"SKIP    {'canon-stamp':<20} no canon/ beside this checker; copy is stamped "
+              f"{CANON_STAMP or '(unstamped)'}")
+        return
+    if not dst or not dst.exists():
+        return                  # canon-drift already reports an absent vendored checker
+    if have == want:
+        return
+    yield Finding("canon-stamp", "warn", rel, None,
+                  f"rendered from canon {have or '(unstamped)'}; canon is now {want} "
+                  f"— --fix re-renders it")
+
+
 @rule("secrets", "error")
 def _r_secrets(ctx):
     if shutil.which("gitleaks"):
@@ -1308,6 +1394,7 @@ RATIONALE = {
     "tracked-not-present": "A tracked file the tree lacks used to kill the run with a traceback.",
     "license-posture": "ADR 0010: AGPL-3.0-or-later org-wide, inherited from what the apps link.",
     "canon-drift": "Mechanical files have one correct form; drift is a bug, not a variant.",
+    "canon-stamp": "A vendored copy has no canon/ to compare against; it carries the digest instead.",
     "secrets": "gestion/.githooks/pre-commit already chose this posture; propagate it.",
     "public-leak": "The org .github repo is world-readable; the repos it serves are not.",
     "broken-links": "Offline check so CI stays deterministic; moved files break relative links.",
@@ -1505,6 +1592,11 @@ def baseline_diff(current: dict, save: bool) -> int:
             print(f"      RESOLVED {fp}")
         for fp in unknown[:6]:
             print(f"      UNKNOWN  {fp}  (its rule did not run)")
+    # The loop above walks `current`, so a repository that has left the audit produces no line at
+    # all: its findings simply sit in the file being neither new, resolved nor open. `common` rotted
+    # there after the repository was deleted from GitHub, and only a hand-read of the JSON found it.
+    for repo in sorted(set(old) - set(current)):
+        print(f"  STALE {repo} (recorded, no clone discovered)")
     # A rule appearing across most repos at once is a rule change; documentation does not
     # rot in lockstep. Requiring ALL of them was too strict — one already-compliant repo
     # (repo-docs itself) was enough to silence the warning.
@@ -1584,7 +1676,19 @@ def open_pr(repo: Path, paths: list, level: str) -> str:
 
 
 def selftest() -> None:
-    global ROOT, gh
+    global ROOT, gh, CANON_DIR
+
+    # `SELF_REF` carried the organisation name as a backslash-escaped template placeholder.
+    # `string.Template`'s escape for a literal dollar is a doubled dollar, not a backslash, so `render`
+    # left the backslash in place and every vendored copy read a leading backslash-A — the
+    # start-of-string anchor, so the alternative could never match. The naive repair renders to a bare
+    # `APS-Conecta`, which also matches every `github.com/APS-Conecta/<repo>` URL in our own
+    # documentation. Both directions are asserted, and the pattern now holds no placeholder at all, so
+    # it reads identically in canon and in every copy.
+    assert SELF_REF.search("APS-Conecta's own code is proprietary."), \
+        "the hyphenated organisation name must self-refer"
+    assert not SELF_REF.search("https://github.com/APS-Conecta/gestion/blob/main/LICENSE"), \
+        "a repository URL names a location, not the subject of a sentence"
 
     # ADR 0003 says the org-2FA pre-flight "is asserted in the selftest and must never become
     # advisory". It said so while nothing asserted it. Enforcing 2FA removes every member who lacks
@@ -1678,6 +1782,36 @@ def selftest() -> None:
                 "a present-but-inert hook must be reported as drift"
             list(_r_canon(dict(ctx, fix=True)))
             assert os.access(hook, os.X_OK), "--fix must set the executable bit"
+
+            # A vendored copy has no canon/ to diff against (ADR 0004), so it carries canon's digest
+            # instead. Blanking the stamp line before hashing is what lets that converge — the stamp
+            # is written into a canon source, so a digest that counted it would move every time it
+            # was written. Asserted both ways: a digest that ignored everything would pass the first
+            # of these on its own.
+            assert _canon_digest({"x": 'CANON_STAMP = ""\nbody\n'}) == \
+                   _canon_digest({"x": 'CANON_STAMP = "0123456789ab"\nbody\n'}), \
+                "the digest must not depend on the stamp it writes"
+            assert _canon_digest({"x": 'CANON_STAMP = ""\nbody\n'}) != \
+                   _canon_digest({"x": 'CANON_STAMP = ""\nbodz\n'}), \
+                "...but every other byte must still count"
+
+            vendored = repo / P["canon"]["repo-docs.py"]
+            vendored.parent.mkdir(parents=True, exist_ok=True)
+            vendored.write_text(render("repo-docs.py", canon_vars(facts)))
+            assert not list(_r_canon_stamp(ctx)), "a freshly rendered copy carries today's stamp"
+
+            # Seed the violation rather than watch it pass: move canon, and every copy already
+            # rendered is one engine behind. Against a throwaway copy, so real canon is never edited.
+            fake = Path(td) / "canon"
+            shutil.copytree(CANON_DIR, fake)
+            old_canon, CANON_DIR = CANON_DIR, fake
+            try:
+                (fake / "CODEOWNERS").write_text((fake / "CODEOWNERS").read_text() + "# seeded\n")
+                stale = list(_r_canon_stamp(ctx))
+                assert [f.severity for f in stale] == ["warn"], [str(f) for f in stale]
+                assert "canon is now" in stale[0].msg, stale[0].msg
+            finally:
+                CANON_DIR = old_canon
 
             before = sorted(p.name for p in repo.rglob("*"))
             scaffold(repo, "full", False, write=False)

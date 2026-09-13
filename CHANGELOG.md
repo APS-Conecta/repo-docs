@@ -8,6 +8,67 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — fifth pass: a placeholder that could not survive being rendered
+
+- **A `$org` placeholder inside a regex could never match anything, in any copy.** `SELF_REF` — the
+  sentence-scope test that decides whether a licence claim is *about us* — carried `APS Conecta|\$org`.
+  `render` substitutes with `string.Template`, whose escape for a literal dollar is a doubled dollar
+  and **not** a backslash, so the backslash survived into every vendored copy as `\APS-Conecta`: a
+  leading `\A` is the start-of-string anchor, and the alternative matched nothing at all. The obvious
+  repair is worse than the bug — a bare `APS-Conecta` also matches every `github.com/APS-Conecta/<repo>`
+  URL in our own documentation, adding false positives to a rule whose severity is `error`. The name is
+  now written out as `APS[- ]Conecta\b(?![-/])`, which folds in the spaced spelling, excludes the URL
+  form, and — the point — holds no placeholder at all, so the line renders identically in canon and in
+  every copy and cannot come back this way. Measured across all six clones at eight different gates:
+  the candidate count is unchanged at every one of them, while the naive form raises it by between two
+  and nine. Asserted both ways in `selftest`, which fails on the old pattern.
+- **A repository deleted from GitHub rotted in the baseline, producing no output at all.**
+  `baseline_diff` iterates `current`, so a recorded repository with no clone is neither new, resolved
+  nor open — it simply never appears. `common` sat there after the repository was deleted and was
+  found by hand-reading the JSON, not by running the tool. Names in the baseline and not in the run
+  are now printed as `STALE <name> (recorded, no clone discovered)`. Verified by seeding a key for a
+  repository that does not exist and watching it report.
+
+### Added — fifth pass
+
+- **`canon-stamp` (warn).** `canon-drift` needs both sides of a comparison and a vendored copy has
+  only one: no repository carries `canon/` (ADR 0004), so the rule that keeps eight copies from
+  becoming eight versions reports SKIP in the seven places those copies actually live. `render` now
+  writes the digest of canon — `sha256[:12]` over every non-seed canon source — into the copy it
+  produces, so a copy *states* which engine it came from instead of that being recoverable only by
+  diffing it against a canon it cannot see. Where canon is present the rule compares the two and names
+  version drift; where it is absent the stamp is printed and the run marked degraded, because an
+  unevaluated rule must never read as green.
+  The trap is that the stamp is written **into** a canon source — `canon/repo-docs.py` is a symlink to
+  `scripts/docs.py` — so a digest that counted the stamp line would be a function of itself: write the
+  stamp, the digest moves, the stamp is stale, forever. `_canon_digest` blanks that one line in every
+  source first, and `selftest` asserts the digest is invariant to the stamp's value **and** still
+  sensitive to every other byte; the second assertion is what stops the first being satisfied by a
+  digest that ignores everything. Both directions were checked by seeding, not by watching a pass: a
+  freshly rendered copy yields no finding, and one appended line in a throwaway copy of canon makes it
+  stale. Seeds are excluded from the digest deliberately — a seed is written once and then belongs to
+  the repository, so editing `canon/LICENSE` is not engine drift and must not age eight copies at once.
+- The stamp is why nothing in this engine may write a dollar-sigil token in its own prose any more:
+  the file is rendered, so a comment explaining a placeholder gets the placeholder substituted out of
+  it, and the vendored copies then carry a comment asserting the opposite of the truth. Caught by
+  diffing `.github/repo-docs.py` against `scripts/docs.py` after the first attempt, which had turned
+  "the escape is a doubled dollar" into "the escape is a dollar" in every repository.
+
+### Removed — `common`
+
+- **`common` is gone from the audit.** `gh api repos/APS-Conecta/common` returns 404 and the
+  repository is not archived; the organisation holds eight repositories and that is not one of them.
+  Its four baseline findings and its `repo_archetypes` entry are removed by hand, exactly as
+  `analizador-rem` was, so no unrelated drift rides in on a regenerated baseline. `README.md` loses it
+  from the unreconciled-licence list, and the count of repositories not cloned locally goes from three
+  to two — `calculadora-ecicep` and `Databases`, checked against the organisation's repository list.
+  The same paragraph's other counts were measured and corrected with it: 25 rules, 5 settings probes
+  and six cloned repositories, not 23, 4 and four.
+  Those two uncloned repositories are deliberately **not** given baseline keys: `check` only ever keys
+  the snapshot on directories the disk walk discovered, and `--save-baseline` replaces the file
+  wholesale, so a hand-added key for an uncloned repository yields no findings and deletes itself on
+  the next save.
+
 ### Fixed — third pass: the gate itself was wrong
 
 - **…and once it ran, it failed three repos on a checkout layout.** `gaps()` decided whether an org

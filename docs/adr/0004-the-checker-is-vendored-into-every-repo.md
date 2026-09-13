@@ -37,7 +37,11 @@ constraint here rather than in a comment inside a generated file.
 - **A vendored copy runs with less than the original.** `canon/` is not vendored, so `canon-drift`
   cannot evaluate itself in the repositories it governs; it reports SKIP there. That is deliberate
   and load-bearing: it must not pass silently for want of anything to compare against. The corollary
-  is that a vendored *profile* drifts unnoticed between engine refreshes.
+  is that a vendored *profile* drifts unnoticed between engine refreshes. Since 2026-09-13 a copy at
+  least carries a `CANON_STAMP` — the digest of the canon it was rendered from, written by `render` —
+  so which engine a repository is on is a fact recorded in the artifact rather than one only a byte
+  diff against canon can recover. `canon-stamp` compares it where canon is present and prints it
+  where canon is absent; it still cannot verify it there, which is this consequence, not a fix for it.
 - **What replaces this.** An organisation PAT with read access to `repo-docs`, or publishing the
   checker as its own public repository. Either removes the duplication; the first adds a secret to
   rotate, the second publishes the audit rules. Neither was needed at eight repositories and one

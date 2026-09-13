@@ -5,12 +5,6 @@
   "claim-boxes|ROADMAP.md|open commitment, not machine-verifiable",
   "claim-boxes|docs/design/01-installation.md|open commitment, not machine-verifiable"
  ],
- "common": [
-  "unverified-command|README.md|`make check-docker` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
-  "unverified-command|README.md|`make check` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
-  "unverified-command|README.md|`make test-docker` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
-  "unverified-command|README.md|`make test` is documented but run by no gate \u2014 cover it or mark it untested where it appears"
- ],
  "epidemiologia": [],
  "gestion": [
   "claim-boxes|.github/SECURITY.md|open commitment, not machine-verifiable",

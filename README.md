@@ -19,14 +19,14 @@ The engine is portable; the policy is not, and that separation is deliberate ([A
 
 ## Status
 
-**Working, in first rollout.** 23 rules, 5 facts, 4 settings probes, one profile.
+**Working, in first rollout.** 25 rules, 5 facts, 5 settings probes, one profile.
 
-Verified against all four cloned repositories. It governs itself: this repository is the eighth in
+Verified against all six cloned repositories. It governs itself: this repository is the eighth in
 the organisation and must pass its own gate.
 
-Not yet done: the org-wide `.github` defaults pass, three repositories are not cloned locally, and
-the licence reconciliation ADR 0007 requires is still open on `territorio`, `common` and
-`aps-conecta-web`.
+Not yet done: the org-wide `.github` defaults pass, two repositories are not cloned locally
+(`calculadora-ecicep` and `Databases`), and the licence reconciliation ADR 0007 requires is still
+open on `territorio` and `aps-conecta-web`.
 
 ## Quickstart
 

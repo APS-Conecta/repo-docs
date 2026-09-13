@@ -80,7 +80,6 @@
   "_comment_root": "Where the clones live is machine-local, not policy: see config.json.",
   "repo_archetypes": {
     "repo-docs": "cli",
-    "aps-conecta-web": "website",
-    "common": "library"
+    "aps-conecta-web": "website"
   }
 }
