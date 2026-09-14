@@ -52,7 +52,7 @@ PROFILES = _resource("profiles")
 # Deliberately not a `string.Template` placeholder: this whole file is rendered, so a placeholder
 # here would also be substituted inside the comparison below that reads it. Every dollar-sigil token
 # in this file is substituted on the way out, which is why none of the prose in it writes one.
-CANON_STAMP = "c0614448c46f"
+CANON_STAMP = "ab48cfd614cf"
 
 # ---- craft vs decision (ADR 0002) --------------------------------------------------
 # Every rule below is craft: true of documentation anywhere. Every rule's PARAMETERS are
@@ -618,8 +618,15 @@ def harvest(exemplar: Path) -> list:
     """Refresh canon/ from the exemplar. One convention, one home."""
     written = []
     org, name = repo_name(exemplar)
-    subs = [(re.escape(HOLDER), "Daniel Espinoza Charrier"), (rf"\b{re.escape(name or '')}\b", "repo-docs"),
-            (re.escape(ORG), "APS-Conecta"), (r"\b2026\b", "2026")]
+    # The dollar is assembled at runtime, never written literally. These four ARE the variables
+    # `render` supplies, and this file is rendered into every repository, so a bare `$` followed by
+    # `holder` here is substituted on the way out: the vendored copy's table then replaces the
+    # owner's name with the owner's name, and `harvest` in a vendored copy would write real values
+    # into canon instead of placeholders. `string.Template` leaves a lone `$` untouched — it
+    # matches none of its three forms — so `D` survives rendering, and so does this comment.
+    D = "$"
+    subs = [(re.escape(HOLDER), f"{D}holder"), (rf"\b{re.escape(name or '')}\b", f"{D}repo"),
+            (re.escape(ORG), f"{D}org"), (r"\b2026\b", f"{D}year")]
     for canon_rel, repo_rel in P["canon"].items():
         src = exemplar / repo_rel
         if canon_rel in P["canon_no_harvest"] or not src.exists():
@@ -1689,6 +1696,20 @@ def selftest() -> None:
         "the hyphenated organisation name must self-refer"
     assert not SELF_REF.search("https://github.com/APS-Conecta/gestion/blob/main/LICENSE"), \
         "a repository URL names a location, not the subject of a sentence"
+
+    # This file is rendered into every repository -- `canon/repo-docs.py` is a symlink to it -- so
+    # ANYTHING in it that looks like a template variable is substituted on the way out. `SELF_REF`
+    # was one such leak (#6); `harvest`'s substitution table was the other (#7), and it held the very
+    # four names `render` supplies, so every vendored copy carried the owner's real name where the
+    # table should say `$` followed by `holder`. Rather than assert those four, assert the
+    # invariant that makes the class impossible: rendering this file must change nothing in it,
+    # comments included. `$SECTION_` and `$PLACEHOLDER` survive because they are not variables
+    # `render` supplies; anything that IS one fails here on the day it is written.
+    _vars = {"org": "ORG", "repo": "REPO", "branch": "BRANCH", "holder": "HOLDER",
+             "year": "YEAR", "canon_stamp": "STAMP", "code_owners": "OWNERS"}
+    _self = Path(__file__).read_text()
+    assert string.Template(_self).safe_substitute(_vars) == _self, \
+        "this file is rendered into every repository, so nothing in it may be a live placeholder"
 
     # ADR 0003 says the org-2FA pre-flight "is asserted in the selftest and must never become
     # advisory". It said so while nothing asserted it. Enforcing 2FA removes every member who lacks

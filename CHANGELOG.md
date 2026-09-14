@@ -8,6 +8,41 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — sixth pass: the file stops leaking placeholders into itself
+
+- **`harvest`'s substitution table was itself substituted, and every vendored copy carried the
+  owner's real name where the table should hold a placeholder.** Found while fixing `SELF_REF`
+  (#6) — same defect family, one layer further in. The table's replacement strings are the four
+  names `render` supplies, so `canon/repo-docs.py` (a symlink to `scripts/docs.py`) rendered them
+  out. It was visible in this repository's own vendored copy:
+
+  ```python
+  # .github/repo-docs.py, before
+  subs = [(re.escape(HOLDER), "Daniel Espinoza Charrier"), (rf"\b{re.escape(name or '')}\b", "repo-docs"),
+          (re.escape(ORG), "APS-Conecta"), (r"\b2026\b", "2026")]
+  ```
+
+  A table that replaces the owner's name **with the owner's name**. Inert only because `harvest`
+  needs `canon/`, which is never vendored — had anyone run `harvest` from a vendored copy, it would
+  have written real values into canon instead of placeholders.
+
+  The dollar is now assembled at runtime (`D = "$"`), which `string.Template` leaves alone because a
+  lone dollar matches none of its three forms. `$$` would not do: the source must *evaluate* to the
+  placeholder, and `$$holder` evaluates to itself.
+
+- **The fix is one assertion, not four.** `selftest` now asserts that **rendering this file changes
+  nothing in it** — the invariant that makes the whole class impossible, rather than a check for the
+  four tokens that happened to leak this time. `$SECTION_` and `$PLACEHOLDER` survive because they
+  are not variables `render` supplies; anything that *is* one fails on the day it is written.
+
+  It earned its keep immediately: the first run failed on the **comments explaining the trap**, which
+  had been written with a live `$holder` in them. The explanation had fallen into the thing it
+  explained, and only a byte-for-byte assertion could have noticed.
+
+- **This closes what ADR-0004 still listed as unsolved.** A vendored copy is now byte-identical to
+  canon apart from its `CANON_STAMP` line, so the canon-stamp rule verifies itself **offline, inside
+  a vendored repo**, with no exception carved out for the one line that could never match.
+
 ### Fixed — fifth pass: a placeholder that could not survive being rendered
 
 - **A `$org` placeholder inside a regex could never match anything, in any copy.** `SELF_REF` — the
