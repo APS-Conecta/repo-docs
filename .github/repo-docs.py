@@ -52,7 +52,7 @@ PROFILES = _resource("profiles")
 # Deliberately not a `string.Template` placeholder: this whole file is rendered, so a placeholder
 # here would also be substituted inside the comparison below that reads it. Every dollar-sigil token
 # in this file is substituted on the way out, which is why none of the prose in it writes one.
-CANON_STAMP = "ab48cfd614cf"
+CANON_STAMP = "cf22b906ce06"
 
 # ---- craft vs decision (ADR 0002) --------------------------------------------------
 # Every rule below is craft: true of documentation anywhere. Every rule's PARAMETERS are
@@ -618,6 +618,9 @@ def harvest(exemplar: Path) -> list:
     """Refresh canon/ from the exemplar. One convention, one home."""
     written = []
     org, name = repo_name(exemplar)
+    if not name:
+        sys.exit(f"repo-docs: {exemplar} has no origin remote — refusing to harvest from a "
+                 f"repository I cannot name")
     # The dollar is assembled at runtime, never written literally. These four ARE the variables
     # `render` supplies, and this file is rendered into every repository, so a bare `$` followed by
     # `holder` here is substituted on the way out: the vendored copy's table then replaces the
@@ -1705,8 +1708,7 @@ def selftest() -> None:
     # invariant that makes the class impossible: rendering this file must change nothing in it,
     # comments included. `$SECTION_` and `$PLACEHOLDER` survive because they are not variables
     # `render` supplies; anything that IS one fails here on the day it is written.
-    _vars = {"org": "ORG", "repo": "REPO", "branch": "BRANCH", "holder": "HOLDER",
-             "year": "YEAR", "canon_stamp": "STAMP", "code_owners": "OWNERS"}
+    _vars = dict.fromkeys(canon_vars({}), "X")   # every name render supplies, never a hand copy
     _self = Path(__file__).read_text()
     assert string.Template(_self).safe_substitute(_vars) == _self, \
         "this file is rendered into every repository, so nothing in it may be a live placeholder"
@@ -1849,6 +1851,15 @@ def selftest() -> None:
             assert out.startswith("refused:"), out
             assert "unrelated.txt" in out, out
             assert "CONTRIBUTING.md" in out, out  # porcelain column must not truncate
+
+            # An exemplar with no remote yields, for its name, a pattern that is two bare word
+            # boundaries: it matches between every word and would splice the repo placeholder
+            # into every byte of every canon file. Refused before canon is touched.
+            try:
+                harvest(Path(td) / "nowhere")
+                raise AssertionError("harvest must refuse an exemplar it cannot name")
+            except SystemExit as exc:
+                assert "cannot name" in str(exc), exc
         finally:
             ROOT = old_root
     print("selftest: ok")

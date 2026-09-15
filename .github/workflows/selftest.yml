@@ -1,0 +1,25 @@
+# The engine's own invariants: rendering docs.py changes nothing in it, the org-2FA guard fails
+# closed, harvest refuses an exemplar it cannot name. `selftest` needs canon/ beside the checker,
+# so it runs only here — a vendored copy has no canon/ and dies before asserting anything. docs.yml
+# is canon and identical in every repository, which is why this is a separate file.
+name: selftest
+
+on:
+  pull_request:
+    paths: ["scripts/**", "canon/**", "profiles/**", ".github/workflows/selftest.yml"]
+  push:
+    branches: [main]
+    paths: ["scripts/**", "canon/**", "profiles/**", ".github/workflows/selftest.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 scripts/docs.py selftest

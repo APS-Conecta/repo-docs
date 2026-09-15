@@ -8,6 +8,16 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed — seventh pass: the checker's own guards get wired and deduplicated
+
+- **`harvest` refuses an exemplar it cannot name.** Without a remote its name pattern was two bare
+  word boundaries — truthy, past the guard, matching between every word — and would have spliced
+  the repo placeholder into every byte of every canon file. Asserted in `selftest`.
+- **The render fixed-point assertion reads `canon_vars()`** instead of re-typing its seven names, so
+  a variable added tomorrow is covered the day it exists.
+- **`selftest` runs in CI** (`.github/workflows/selftest.yml`, this repository only — it needs
+  `canon/` beside the checker). It was invoked by nothing.
+
 ### Fixed — sixth pass: the file stops leaking placeholders into itself
 
 - **`harvest`'s substitution table was itself substituted, and every vendored copy carried the
@@ -39,9 +49,10 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
   had been written with a live `$holder` in them. The explanation had fallen into the thing it
   explained, and only a byte-for-byte assertion could have noticed.
 
-- **This closes what ADR-0004 still listed as unsolved.** A vendored copy is now byte-identical to
-  canon apart from its `CANON_STAMP` line, so the canon-stamp rule verifies itself **offline, inside
-  a vendored repo**, with no exception carved out for the one line that could never match.
+- **A vendored copy is now byte-identical to canon apart from its `CANON_STAMP` line.** That is the
+  precondition for `canon-stamp` ever verifying a copy offline — not the verification: a copy still
+  has no `canon/` to compare against and the rule still prints SKIP there, which is the open item
+  ADR-0004 lists. (This bullet claimed the closure on 2026-09-13; corrected 2026-09-14.)
 
 ### Fixed — fifth pass: a placeholder that could not survive being rendered
 
