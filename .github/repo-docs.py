@@ -52,7 +52,7 @@ PROFILES = _resource("profiles")
 # Deliberately not a `string.Template` placeholder: this whole file is rendered, so a placeholder
 # here would also be substituted inside the comparison below that reads it. Every dollar-sigil token
 # in this file is substituted on the way out, which is why none of the prose in it writes one.
-CANON_STAMP = "cf22b906ce06"
+CANON_STAMP = "6b109a4cd676"
 
 # ---- craft vs decision (ADR 0002) --------------------------------------------------
 # Every rule below is craft: true of documentation anywhere. Every rule's PARAMETERS are
@@ -132,8 +132,13 @@ def load_profile(owner: str):
     prof = _merge(base, json.loads(f.read_text()))
     cfg = SKILL / "config.json"          # machine-local overrides; never vendored
     if cfg.exists():
-        _merge(prof, {k: v for k, v in json.loads(cfg.read_text()).items()
-                      if k in ("root", "holder")})
+        raw = json.loads(cfg.read_text())
+        _merge(prof, {k: v for k, v in raw.items() if k in ("root", "holder")})
+        ignored = sorted(set(raw) - {"root", "holder"})
+        if ignored:
+            # A key the engine silently drops is a policy the author believes is applied
+            print(f"WARN     config.json: {', '.join(ignored)} ignored — only 'root' and "
+                  f"'holder' are machine-local overrides; policy belongs in profiles/")
     for env, key in (("REPO_DOCS_ROOT", "root"), ("REPO_DOCS_HOLDER", "holder")):
         if os.environ.get(env):
             prof[key] = os.environ[env]
@@ -1098,7 +1103,7 @@ def _r_canon_stamp(ctx):
         return                  # canon-drift already reports an absent vendored checker
     if have == want:
         return
-    yield Finding("canon-stamp", "warn", rel, None,
+    yield Finding("canon-stamp", "error" if STAMP_IS_ERROR else "warn", rel, None,
                   f"rendered from canon {have or '(unstamped)'}; canon is now {want} "
                   f"— --fix re-renders it")
 
@@ -1569,6 +1574,9 @@ def check(repo: Path, level="full", org_mode=False, offline=False, fix=False,
 
 
 BASELINE = SKILL / "baseline.json"
+# Raised by `check --stamp-error` (the scheduled sweep): centrally, where canon/ is present, a
+# stale stamp means a vendored engine drifted — error; in-repo runs keep the historical warn.
+STAMP_IS_ERROR = False
 
 
 def fingerprint(f: Finding) -> str:
@@ -1886,6 +1894,8 @@ def main(argv=None):
     c.add_argument("--fix", action="store_true")
     c.add_argument("--explain", action="store_true")
     c.add_argument("--save-baseline", dest="save_baseline", action="store_true")
+    c.add_argument("--stamp-error", dest="stamp_error", action="store_true",
+                   help="raise canon-stamp to error — for the central sweep, where canon/ is present")
     add("audit").add_argument("repo")
     add("outline").add_argument("repo")
     add("licences").add_argument("repo")
@@ -1977,6 +1987,12 @@ def main(argv=None):
                      "of the rules, so recording it would retire what it never ran")
         targets = ([Path(v) for v in discover()["repos"].values()] if a.all
                    else [resolve(a.repo)])
+        if a.all and not targets:
+            sys.exit("repo-docs: check --all discovered zero repos — without config.json or "
+                     "REPO_DOCS_ROOT the audit scopes to the cwd and an empty walk reads green "
+                     "while checking nothing. Point REPO_DOCS_ROOT at the org checkout.")
+        global STAMP_IS_ERROR
+        STAMP_IS_ERROR = bool(getattr(a, "stamp_error", False))
         rc, snapshot = 0, {}
         for t in targets:
             found = []

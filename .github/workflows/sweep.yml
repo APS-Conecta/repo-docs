@@ -1,0 +1,48 @@
+# The scheduled central sweep (org L8-02): the only drift detector that can see
+# the whole org, on a schedule. In-repo docs.yml runs --offline because
+# GITHUB_TOKEN cannot read org facts; this job carries an org-scoped token
+# (SWEEP_GH_TOKEN secret), clones the census, and fails on NEW findings —
+# canon drift, a stale stamp (--stamp-error raises it centrally, where canon/
+# is present), or a repo that joined the suite without canonizing (the census
+# tripwire, L8-01). The census = baseline keys ∪ OWN_APPS: 12-apps.sh is the
+# suite's own registry, so a repo cannot ship without being in it.
+name: sweep
+
+on:
+  schedule:
+    - cron: "43 5 * * 1"   # weekly — the drift bar between engine refreshes
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    name: Clone the census, check every repo
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: The census and the onboarding tripwire
+        env:
+          GH_TOKEN: ${{ secrets.SWEEP_GH_TOKEN }}
+        run: |
+          set -euo pipefail
+          git clone -q "https://github.com/APS-Conecta/gestion.git" gestion
+          own="$(sed -n 's/^OWN_APPS="\(.*\)"$/\1/p' gestion/provisioning/phases/12-apps.sh | tr ' ' '\n' | cut -d= -f1)"
+          base="$(python3 -c "import json; print('\n'.join(k for k in json.load(open('baseline.json')) if k not in ('.github', 'repo-docs')))")"
+          census="$(printf '%s\n%s\n' "$own" "$base" | sort -u | grep -v '^$')"
+          for r in $census; do
+            [ -d "$r" ] || git clone -q "https://github.com/APS-Conecta/$r.git" "$r"
+            python3 -c "import json,sys; sys.exit(0 if '$r' in json.load(open('baseline.json')) else 1)" \
+              || { echo "::error::census repo '$r' has no baseline key — canonize it: scripts/docs.py check $r --fix, then scripts/docs.py check --all --save-baseline (org L8-01)"; exit 1; }
+          done
+          echo "census cloned: $(printf '%s ' $census)"
+      - name: Check every repo — new findings red, the stamp is an error here
+        env:
+          GH_TOKEN: ${{ secrets.SWEEP_GH_TOKEN }}
+          REPO_DOCS_ROOT: ${{ github.workspace }}
+        run: python3 scripts/docs.py check --all --stamp-error
