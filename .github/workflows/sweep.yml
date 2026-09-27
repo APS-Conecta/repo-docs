@@ -28,21 +28,27 @@ jobs:
           python-version: "3.12"
       - name: The census and the onboarding tripwire
         env:
-          GH_TOKEN: ${{ secrets.SWEEP_GH_TOKEN }}
+          # The census has PRIVATE repos (territorio, farmacia, epidemiologia): a
+          # bare `git clone https://…` has no credential on a runner and died
+          # with "could not read Username" on the first sweep (2026-09-25).
+          # `gh repo clone` reads GH_TOKEN; APS_BOT_PAT is the org's fine-grained
+          # PAT (Contents: read on the private census repos), visible to this
+          # repo through the org secret's repository selection.
+          GH_TOKEN: ${{ secrets.APS_BOT_PAT }}
         run: |
           set -euo pipefail
-          git clone -q "https://github.com/APS-Conecta/gestion.git" gestion
+          gh repo clone APS-Conecta/gestion gestion -- -q
           own="$(sed -n 's/^OWN_APPS="\(.*\)"$/\1/p' gestion/provisioning/phases/12-apps.sh | tr ' ' '\n' | cut -d= -f1)"
           base="$(python3 -c "import json; print('\n'.join(k for k in json.load(open('baseline.json')) if k not in ('.github', 'repo-docs')))")"
           census="$(printf '%s\n%s\n' "$own" "$base" | sort -u | grep -v '^$')"
           for r in $census; do
-            [ -d "$r" ] || git clone -q "https://github.com/APS-Conecta/$r.git" "$r"
+            [ -d "$r" ] || gh repo clone "APS-Conecta/$r" "$r" -- -q
             python3 -c "import json,sys; sys.exit(0 if '$r' in json.load(open('baseline.json')) else 1)" \
               || { echo "::error::census repo '$r' has no baseline key — canonize it: scripts/docs.py check $r --fix, then scripts/docs.py check --all --save-baseline (org L8-01)"; exit 1; }
           done
           echo "census cloned: $(printf '%s ' $census)"
       - name: Check every repo — new findings red, the stamp is an error here
         env:
-          GH_TOKEN: ${{ secrets.SWEEP_GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.APS_BOT_PAT }}
           REPO_DOCS_ROOT: ${{ github.workspace }}
         run: python3 scripts/docs.py check --all --stamp-error
