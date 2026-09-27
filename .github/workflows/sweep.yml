@@ -1,7 +1,10 @@
 # The scheduled central sweep (org L8-02): the only drift detector that can see
 # the whole org, on a schedule. In-repo docs.yml runs --offline because
-# GITHUB_TOKEN cannot read org facts; this job carries an org-scoped token
-# (SWEEP_GH_TOKEN secret), clones the census, and fails on NEW findings —
+# GITHUB_TOKEN cannot read org facts; this job carries the org's fine-grained
+# PAT (APS_BOT_PAT — a REPOSITORY secret here: this repo is private and the org
+# is on GitHub Free, where organization secrets reach public repos only, so the
+# org-level copy never arrives; rotate both), clones the census, and fails on
+# NEW findings —
 # canon drift, a stale stamp (--stamp-error raises it centrally, where canon/
 # is present), or a repo that joined the suite without canonizing (the census
 # tripwire, L8-01). The census = baseline keys ∪ OWN_APPS: 12-apps.sh is the
