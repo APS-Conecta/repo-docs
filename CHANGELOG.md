@@ -8,6 +8,29 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **The mode table.** `docs/index.md` is rebuilt as the Document × Mode × Reader × Authority table —
+  one row per governed document, `adr/0005-one-published-surface.md` included for the first time —
+  and `references/layout.md` records the standard and the flat-`docs/` decision behind it: no
+  Diátaxis directories at `full`, the table does the navigation. The `ultra` block keeps the
+  four-directory definition and now records its own YAGNI — `required()` reads only the file list,
+  so nothing enforces the split.
+- **§Style in `references/conventions.md`** — sentence case, second person, active voice, present
+  tense, blockquote admonitions — and the citation doctrine in §Reference documentation: Nextcloud
+  facts pinned to `docs.nextcloud.com/server/34/`, cited never restated (occ reference,
+  `config.php` parameters, `info.xml` schema, app-store rules, code signing, OCS/WebDAV APIs),
+  fork deltas citing the upstream page, published pages never renamed.
+
+### Changed
+
+- **`doc_language_exempt` corrected to ten entries.** `GLOSARIO.md` is dropped — no such file
+  exists anywhere in the suite — and the Spanish that actually ships is named instead:
+  `docs/GUIA-CLINICA.md`, `docs/manual.md`, `Legal/OBLIGACIONES.md` and the six statute files, all
+  matched by path suffix. The comment now states the reader/subject rule and records that
+  gestion's `USER_MANUAL.md` is a deferral, not an exemption. This edit ages the canon stamp;
+  every vendored copy is re-rendered to match.
+
 ### Fixed — seventh pass: the checker's own guards get wired and deduplicated
 
 - **`harvest` refuses an exemplar it cannot name.** Without a remote its name pattern was two bare

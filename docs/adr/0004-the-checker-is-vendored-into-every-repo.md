@@ -32,7 +32,8 @@ constraint here rather than in a comment inside a generated file.
   `SKILL` was `Path(__file__).parent.parent`, correct for `repo-docs/scripts/docs.py` and wrong for
   `<repo>/.github/repo-docs.py`, so `profiles/` resolved one directory too high, `P` was `{}`, and
   every invocation died in argparse with `KeyError: 'levels'`. Eight repositories advertised a
-  working `docs` workflow throughout; a real run on `aps-conecta-web` PR #1 carried the traceback.
+  working `docs` workflow throughout; a real run on the first PR opened against one of them carried
+  the traceback.
   Fixed 2026-08-08 — resources now resolve from either location.
 - **A vendored copy runs with less than the original.** `canon/` is not vendored, so `canon-drift`
   cannot evaluate itself in the repositories it governs; it reports SKIP there. That is deliberate

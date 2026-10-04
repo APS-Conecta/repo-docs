@@ -46,6 +46,14 @@ disclose it in the description.
 Build · version · licence. Three maximum. A badge pointing at a dead service is worse than no
 badge — it asserts a status nobody is checking.
 
+## Style
+
+Sentence case for headings. Second person — "you run", never "the user runs". Active voice,
+present tense: a page states what the thing does, and past tense appears only in dated history.
+Admonitions are Markdown blockquotes — `> **Note:**` for context the reader may skip,
+`> **Warning:**` for the mistake that costs an hour — never HTML, never emoji. (Adapted from
+Nextcloud's editorial rules; this organisation stays plain Markdown.)
+
 ## Language
 
 Repo documentation in English: README, CONTRIBUTING, SECURITY, ADRs, everything under `docs/`.
@@ -71,9 +79,8 @@ Third-party notices license other people's work and stay — `gestion/docs/LICEN
 audit. A licence name appearing in a doc is only *our* claim when the line self-refers ("our",
 "this project", a `Licence:` label). "Apache-dependent" in `epidemiologia` means the web server.
 
-Closed: the four repositories ADR 0007 left unreconciled — `epidemiologia`,
-`territorio`, `common`, `aps-conecta-web` — all now declare AGPL-3.0-or-later, verified against
-GitHub on 2026-08-08.
+Closed: every repository ADR 0007 left unreconciled now declares AGPL-3.0-or-later, verified
+against GitHub on 2026-08-08.
 
 ## Reference documentation
 
@@ -81,6 +88,14 @@ Pull current library and framework docs from **Context7 MCP** — `resolve-libra
 `query-docs` with the full question. Never hardcode API surfaces from memory; they rot silently and
 a wrong flag in a doc costs more than a missing one. Context7 unavailable → `WebFetch` the canonical
 upstream URL and cite the version. Never a hard dependency.
+
+Nextcloud facts are cited, never restated, and pinned to one version:
+`docs.nextcloud.com/server/34/`. The occ command reference, `config.php` parameters, the
+`info.xml` schema, app-store publication rules, code signing, and the OCS and WebDAV APIs each
+have an official page — link it; a page that restates one drifts the day upstream edits theirs. A
+fork's difference from upstream cites the upstream page it departs from. And never rename a
+published page: cite upstream pages under the title they bear, and treat this organisation's own
+URLs the same way — a link in the wild is a contract.
 
 ## Security-doc scope
 

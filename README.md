@@ -25,8 +25,8 @@ Verified against all six cloned repositories. It governs itself: this repository
 the organisation and must pass its own gate.
 
 Not yet done: the org-wide `.github` defaults pass, two repositories are not cloned locally
-(`calculadora-ecicep` and `Databases`), and the licence reconciliation ADR 0007 requires is still
-open on `territorio` and `aps-conecta-web`.
+(`Databases` among them), and the licence reconciliation ADR 0007 requires is still open on
+`territorio` and one other repository.
 
 ## Quickstart
 
@@ -117,7 +117,7 @@ Changing a rule therefore changes every repository's gate at the next `--fix`. R
 GNU Affero General Public License v3.0 or later — see [`LICENSE`](LICENSE). This matches the
 organisation-wide posture recorded in
 [gestion ADR-0010](https://github.com/APS-Conecta/gestion/blob/main/docs/adr/0010-agpl-across-the-org.md),
-which moved there from `aps-conecta-web` on 2026-08-08 because an org-wide decision does not live in
-one product's repository. The
+which moved to `gestion` from a product repository on 2026-08-08 because an org-wide decision does
+not live in one product's repository. The
 tool depends on nothing outside the Python standard library, so there are no third-party notices to
 carry.

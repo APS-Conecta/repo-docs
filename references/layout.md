@@ -41,6 +41,26 @@ docs/
   index.md
 ```
 
+Level `full` keeps `docs/` flat: `index.md` directly under `docs/`, no Diátaxis directories.
+The directories are a navigation aid for corpora that have outgrown a table; a suite of small
+repositories ships a handful of documents each, and four bins with one file apiece is navigation
+cost with no navigation. `docs/index.md` does the work instead, in one standard shape — one table,
+one row per governed document:
+
+| Document | Mode | Reader | It is the authority for |
+|---|---|---|---|
+
+- **Mode** takes its values from the Diátaxis quadrants — `tutorial`, `how-to`, `reference`,
+  `explanation` — and may combine them (`reference + how-to`) when a page genuinely serves two.
+  Generated and data files are marked in the Mode cell: `reference (generated)`,
+  `reference (data)`.
+- **Reader** names the audience the page is written for, never its author.
+- **It is the authority for** names the facts the document owns — why a reader lands on it, and
+  why a competing page defers to it instead of restating them.
+
+`estadistica/docs/index.md` is the exemplar: the same four columns, one row per document, relative
+links.
+
 Level `ultra` adds `docs/adr/` with statuses, archetype reference stubs, and the Diátaxis split:
 
 ```
@@ -50,6 +70,11 @@ docs/
   reference/     information         (work  + theory)
   explanation/   understanding       (study + theory)
 ```
+
+The split is defined but enforced by nothing: `required()` reads only the file list, so an `ultra`
+repo is checked for `docs/adr` and nothing says its task guides live under `docs/how-to/`. That is
+deliberate YAGNI — no repository runs `ultra` today, and until one does, the mode table carries the
+Diátaxis discipline.
 
 ## Org tree — `APS-Conecta/.github`, `--org`
 
