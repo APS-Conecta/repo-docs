@@ -52,6 +52,8 @@ jobs:
         # line: the sweep's contract (header above) is red on NEW findings and
         # stamp drift, and stamp drift surfaces as a NEW canon-stamp fingerprint.
         # The full log still prints; only the verdict is the grep.
+        # The baseline marker guards against a checker crash reading as green.
         run: |
           python3 scripts/docs.py check --all --stamp-error 2>&1 | tee check.log
+          grep -q '^== baseline' check.log || { echo "::error::checker did not finish (no baseline section)"; exit 1; }
           ! grep -qE '^      NEW' check.log
