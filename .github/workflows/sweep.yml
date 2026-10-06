@@ -38,12 +38,22 @@ jobs:
           # PAT (Contents: read on the private census repos), visible to this
           # repo through the org secret's repository selection.
           GH_TOKEN: ${{ secrets.APS_BOT_PAT }}
-        # The census (baseline ∪ OWN_APPS, case-insensitive lookup, onboarding
-        # tripwire) lives in scripts/census.py so it can be self-tested — this
-        # call replaces the inline block this step used to carry.
-        run: python3 scripts/census.py run
+        # Clones land under RUNNER_TEMP, outside this checkout: nested inside it,
+        # check --all's walk found repo-docs itself holding the whole census, and
+        # the sweep audited repo-docs (with every repo nested in it) on top of the
+        # per-PR docs.yml gate that already covers it.
+        run: python3 scripts/census.py run --root "${RUNNER_TEMP}/census"
       - name: Check every repo — new findings red, the stamp is an error here
         env:
           GH_TOKEN: ${{ secrets.APS_BOT_PAT }}
-          REPO_DOCS_ROOT: ${{ github.workspace }}
-        run: python3 scripts/docs.py check --all --stamp-error
+          REPO_DOCS_ROOT: ${{ runner.temp }}/census
+        # `check --all` exits 1 on ANY open error finding — 41 sit open in AIO
+        # alone, baselined and known — so the exit code cannot be this job's red
+        # line: the sweep's contract (header above) is red on NEW findings and
+        # stamp drift, and stamp drift surfaces as a NEW canon-stamp fingerprint.
+        # The full log still prints; only the verdict is the grep.
+        # The baseline marker guards against a checker crash reading as green.
+        run: |
+          python3 scripts/docs.py check --all --stamp-error 2>&1 | tee check.log
+          grep -q '^== baseline' check.log || { echo "::error::checker did not finish (no baseline section)"; exit 1; }
+          ! grep -qE '^      NEW' check.log

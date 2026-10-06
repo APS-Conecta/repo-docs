@@ -60,17 +60,27 @@ def census(own: list[str], baseline_keys: list[str]) -> list[str]:
     return sorted({resolve(n, baseline_keys) for n in [*own, *baseline_keys]})
 
 
-def run(gestion: str, baseline_path: str) -> None:
+def run(gestion: str, baseline_path: str, root: str = None) -> None:
     """Clone gestion (the registry), build the census, clone every repo in it,
-    and fail on the first census repo without a baseline key."""
-    if not Path(gestion).exists():
-        sh(["gh", "repo", "clone", f"{ORG}/gestion", gestion, "--", "-q"])
+    and fail on the first census repo without a baseline key. Every clone lands
+    under `root` — the sweep points it at RUNNER_TEMP so the census never nests
+    inside the repo-docs checkout: nested there, `check --all` walked repo-docs
+    itself with the whole org inside it (2026-10-06, run 37457227748)."""
+    base = Path(root).resolve() if root else Path.cwd()
+    gpath = Path(gestion)
+    if not gpath.is_absolute():
+        gpath = base / gestion
+    if not gpath.exists():
+        gpath.parent.mkdir(parents=True, exist_ok=True)
+        sh(["gh", "repo", "clone", f"{ORG}/gestion", str(gpath), "--", "-q"])
     baseline = json.loads(Path(baseline_path).read_text())
     keys = [k for k in baseline if k not in INFRA]
-    names = census(own_apps(Path(gestion) / "provisioning" / "phases" / "12-apps.sh"), keys)
+    names = census(own_apps(gpath / "provisioning" / "phases" / "12-apps.sh"), keys)
     for r in names:
-        if not Path(r).exists():
-            sh(["gh", "repo", "clone", f"{ORG}/{r}", r, "--", "-q"])
+        rpath = base / r
+        if not rpath.exists():
+            rpath.parent.mkdir(parents=True, exist_ok=True)
+            sh(["gh", "repo", "clone", f"{ORG}/{r}", str(rpath), "--", "-q"])
         if r not in baseline:
             print(f"::error::census repo '{r}' has no baseline key — canonize it: "
                   f"scripts/docs.py check {r} --fix, then scripts/docs.py check "
@@ -112,6 +122,39 @@ def selftest() -> None:
         reg.write_text('OWN_APPS="intravox=https://github.com/APS-Conecta/IntraVox.git '
                        'other=https://example.invalid/other.git"\n')
         assert own_apps(reg) == ["intravox", "other"], own_apps(reg)
+
+    # run() must clone under --root, never beside the caller: the 2026-10-06 sweep
+    # let the whole census land inside the repo-docs checkout, and `check --all`
+    # then audited repo-docs with every repo nested in it. Assert destinations,
+    # not clones: `sh` is stubbed to record argv and materialize targets, so no
+    # network is touched (the docs.py selftest patches `gh` the same way).
+    with tempfile.TemporaryDirectory() as td:
+        checkout, root = Path(td) / "checkout", Path(td) / "census-root"
+        checkout.mkdir()
+        (checkout / "baseline.json").write_text(json.dumps({"demo": [], ".github": []}))
+        clones = []
+
+        def fake_sh(argv):
+            if argv[:3] != ["gh", "repo", "clone"]:
+                return
+            clones.append(Path(argv[4]))
+            Path(argv[4]).mkdir(parents=True, exist_ok=True)
+            if argv[3].endswith("/gestion"):        # the registry rides the clone
+                reg = Path(argv[4]) / "provisioning" / "phases" / "12-apps.sh"
+                reg.parent.mkdir(parents=True, exist_ok=True)
+                reg.write_text('OWN_APPS="demo=https://example.invalid/demo.git"\n')
+
+        real_sh = globals()["sh"]
+        globals()["sh"] = fake_sh
+        try:
+            run(str(root / "gestion"), str(checkout / "baseline.json"), root=str(root))
+        finally:
+            globals()["sh"] = real_sh
+        assert [c.name for c in clones] == ["gestion", "demo"], clones
+        assert all(c.parent.resolve() == root.resolve() for c in clones), \
+            "census clones must land under --root, not beside the caller"
+        assert not any(c.is_relative_to(checkout) for c in clones), clones
+        assert (root / "demo").is_dir(), "the clone must exist where run() put it"
     print("census: ok")
 
 
@@ -122,10 +165,14 @@ def main(argv=None):
     r.add_argument("--gestion", default="gestion",
                    help="path of the gestion clone (cloned there when absent)")
     r.add_argument("--baseline", default="baseline.json")
+    r.add_argument("--root", default=None,
+                   help="directory the census clones into (default: the cwd — the "
+                        "weekly sweep passes $RUNNER_TEMP/census so clones land "
+                        "outside the repo-docs checkout)")
     sub.add_parser("selftest", help="assert the case-insensitive lookup, both directions")
     a = p.parse_args(argv)
     if a.cmd == "run":
-        run(a.gestion, a.baseline)
+        run(a.gestion, a.baseline, a.root)
     else:
         selftest()
 

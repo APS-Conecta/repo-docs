@@ -8,6 +8,25 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The census clone root.** The weekly sweep cloned the census into the repo-docs
+  checkout (cwd-relative paths in `census.py run`), so `check --all` walked repo-docs
+  holding the whole org nested inside it and went red on NEW findings a stale baseline
+  could not absorb. `census.py run --root` now clones outside the checkout
+  (`$RUNNER_TEMP/census` in CI, self-tested), the sweep points `REPO_DOCS_ROOT` there,
+  and the baseline is re-recorded from clones at main so today's findings are open and
+  only future drift is NEW — the drift itself is filed as one Task issue per repo.
+  Two truths the re-record taught, both folded in here: `check --all` exits 1 on *any*
+  open baselined error (41 sit open in AIO alone), so the sweep's verdict is now a grep
+  for `NEW` lines over the full log — the red line its header always claimed — and the
+  recorder must run with full auth (`--save-baseline` refuses degraded runs), which is
+  a credential the sweep's own PAT lacks: it gets 403 on both dependabot setting
+  probes, so gestion's two `could not read the setting` fingerprints are added to the
+  baseline by hand, the way `common`'s were once removed by hand — the recordable run
+  structurally cannot see what the weekly run will see every week until the PAT is
+  widened (tracked as a Task in this repo).
+
 ### Added
 
 - **The mode table.** `docs/index.md` is rebuilt as the Document × Mode × Reader × Authority table —
