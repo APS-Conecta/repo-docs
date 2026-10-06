@@ -5,7 +5,7 @@
   "exemplar": "gestion",
   "_comment_licence": "ADR 0010 supersedes 0007: AGPL-3.0-or-later across every repo. The apps link @nextcloud/vue (AGPL), so the obligation is inherited, not chosen.",
   "licence_posture": "agpl",
-  "_comment_language": "Repo docs English. Only the org profile/README.md is bilingual ES/EN.",
+  "_comment_language": "Dual regime since ADR 0006 (docs/adr/0006-documentacion-en-espanol.md): English by default; a repository carrying the .github/docs-es marker follows ADR 0006's Spanish must-list — reader-facing docs Spanish, dated history untranslated, the licence name keeps its English proper noun. Only the org profile/README.md is bilingual ES/EN.",
   "doc_language": "en",
   "_comment_language_exempt": "Deliberately Spanish: a doc is exempt when its READER is Spanish-speaking (the staff-facing conventions, the clinical guide, the staff manuals) or when Spanish is its SUBJECT (the statutes and the legal obligations — the law as published, and material about Spanish domain terms). Entries match by path suffix. gestion's USER_MANUAL.md is Spanish under a recorded deferral, not an exemption — it stays a finding until its translation lands. Everything else in Spanish is a finding.",
   "doc_language_exempt": [
@@ -19,6 +19,44 @@
     "ley-20584-derechos-deberes-pacientes.md",
     "ley-21663-ciberseguridad.md",
     "ley-21719-datos-personales.md"
+  ],
+  "_comment_must_be_spanish": "ADR 0006: files whose body prose must be Spanish in every opted-in repo (the .github/docs-es marker). Paths match exactly, never by suffix: docs/guias/README.md is not README.md.",
+  "must_be_spanish": [
+    "README.md",
+    ".github/README.md",
+    "profile/README.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "CODE_OF_CONDUCT.md"
+  ],
+  "_comment_must_be_spanish_documentation": "The documentation repo alone (matched on the repo fact, never a glob) widens the list: its notice and its four directory trees owe Spanish to their readers. A trailing slash is a directory prefix; every other entry is an exact path.",
+  "must_be_spanish_documentation": [
+    "aviso.md",
+    "usuario/",
+    "administracion/",
+    "desarrollo/",
+    "proyecto/"
+  ],
+  "_comment_retired_paths": "ADR 0006: manuals live only in APS-Conecta/documentation and the legacy English paths below are retired — an opted-in repo carrying one deletes it rather than maintains it. Probed on the working tree, not the git index: an untracked straggler or a non-markdown file is invisible to tracked_md() and equally present. Three entries also sit in doc_language_exempt deliberately: exempt explained why a Spanish doc existed; retired says the path must not exist at all.",
+  "retired_paths": [
+    "BUGS.md",
+    "ROADMAP.md",
+    "docs/index.md",
+    "docs/manual.md",
+    "docs/manuals/",
+    "docs/fuentes-checklist.md",
+    "docs/design/map-legibility.md",
+    "docs/GUIA-CLINICA.md",
+    "docs/INSTALLER.md",
+    "docs/CONVENTIONS.md",
+    "docs/ORG-MAP.md",
+    "docs/BRANDING.md",
+    "docs/THEMING-MODEL.md",
+    "docs/WELCOME-SCREEN.md",
+    "docs/LICENSING.md",
+    "docs/ARCHITECTURE.md",
+    "docs/CONTRACTS.md",
+    "docs/MIGRATION.md"
   ],
   "stack_markers": {
     "appinfo/info.xml": "nextcloud-app",
@@ -72,9 +110,9 @@
       "secret-scanning"
     ]
   ],
+  "_comment_notices_doc": "docs/LICENSING.md dropped: gestion's retained copy is no longer the engine's notices document, and the transitional licence-inventory warn on it is accepted until R4.",
   "notices_doc": [
-    "THIRD-PARTY-NOTICES.md",
-    "docs/LICENSING.md"
+    "THIRD-PARTY-NOTICES.md"
   ],
   "_comment_single_tenant": "Wording that presumes one clinic where the software is multi-site: sites/<slug>/site.sh, a 2655-row DEIS register, and gestion ADR-0013 (the establishment is instance configuration; moved out of epidemiologia 2026-08-09). 'CESFAM' as a clinic TYPE is correct and must not match.",
   "single_tenant": [
@@ -89,5 +127,23 @@
   "repo_archetypes": {
     "repo-docs": "cli",
     "aps-conecta-web": "website"
-  }
+  },
+  "_comment_docs_es_sections": "ADR 0006: the README of a repo carrying .github/docs-es owes these H2 sections, in this order. Slugs are stable identifiers; heading text is compared accent-insensitively (the engine folds).",
+  "docs_es_sections": [
+    ["que_es", "Qué es"],
+    ["documentacion", "Documentación"],
+    ["estado", "Estado"],
+    ["inicio_rapido_de_desarrollo", "Inicio rápido de desarrollo"],
+    ["licencia", "Licencia"]
+  ],
+  "_comment_repo_readmes": "Forked repos carry their real README at .github/README.md; every repo not listed reads the root README.md.",
+  "repo_readmes": {
+    "AIO": ".github/README.md",
+    "IntraVox": ".github/README.md"
+  },
+  "_comment_docs_es_licence_link": "The Licencia section must carry one link whose URL contains both substrings — the organisation's notices document.",
+  "docs_es_licence_link": [
+    "aps-conecta.github.io/documentation",
+    "aviso"
+  ]
 }

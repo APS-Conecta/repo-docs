@@ -1,123 +1,142 @@
 # repo-docs
 
-Documentation control for the APS Conecta repositories. It audits what is already written, corrects
-what has one provably right answer, and scaffolds what is missing.
+Control de documentación para los repositorios de APS Conecta. Audita lo que ya está escrito,
+corrige lo que tiene una única respuesta demostrable y genera el andamiaje de lo que falta.
 
-## What this is — and what it is not
+## Qué es
 
-**It is** an auditor first. The organisation's documentation already exists and is already drifting:
-four files in `gestion` disagreed about the size of the team, three repositories declared a licence
-their `LICENSE` file contradicted, and twenty-two ADRs had no status field between them. This tool
-finds that class of defect and, where a machine can settle the question, fixes it.
+**Es un auditor, primero.** La documentación de la organización ya existe y ya está derivando:
+cuatro archivos de `gestion` discrepaban sobre el tamaño del equipo, tres repositorios declaraban
+una licencia que su archivo `LICENSE` contradecía, y veintidós ADR no tenían campo de estado entre
+todos. Esta herramienta encuentra esa clase de defecto y, donde una máquina puede resolver la
+pregunta, la corrige.
 
-**It is not** a writing assistant. It cannot make prose good. It checks that documentation is
-structurally complete and factually consistent — the part that can be checked — and leaves the
-writing to a person or a model working from the section contract it generates.
+**No es** un asistente de escritura: no puede hacer buena la prosa. Comprueba que la documentación
+esté estructuralmente completa y factualmente consistente — la parte que sí se puede comprobar — y
+deja la escritura en manos de una persona o de un modelo que trabaje desde el contrato de secciones
+que la herramienta genera.
 
-**It is not** a generic tool. It encodes this organisation's decisions in `profiles/aps-conecta.json`.
-The engine is portable; the policy is not, and that separation is deliberate ([ADR 0002](docs/adr/0002-craft-in-the-engine-decisions-in-a-profile.md)).
+**No es** una herramienta genérica. Codifica las decisiones de esta organización en
+`profiles/aps-conecta.json`; el motor es portable, la política no, y esa separación es deliberada
+([ADR 0002](docs/adr/0002-craft-in-the-engine-decisions-in-a-profile.md)).
 
-## Status
+## Documentación
 
-**Working, in first rollout.** 25 rules, 5 facts, 5 settings probes, one profile.
+### Comandos
 
-Verified against all six cloned repositories. It governs itself: this repository is the eighth in
-the organisation and must pass its own gate.
+| Comando | Hace |
+|---|---|
+| `discover [--clone]` | Mapea los clones administrados; rechaza dueños sin perfil |
+| `scan <repo>` | Inventario como JSON. Nunca escribe |
+| `check <repo\|--all>` | La puerta de control. `--fix`, `--offline`, `--explain`, `--save-baseline` |
+| `outline <repo>` | El contrato de secciones del README y qué le falta |
+| `licences <repo>` | Lo que el repositorio declara, y cada licencia de terceros presente |
+| `scaffold <repo> --write` | Escribe los archivos que faltan. Nunca sobrescribe |
+| `harvest` | Refresca `canon/` desde el ejemplar del perfil |
+| `settings <repo>` | Sonda el estado de GitHub; `--apply-settings` para cambiarlo |
+| `pr <repo>` | PR en borrador, únicamente con cambios de documentación |
+| `audit <repo>` | Prompt para una lectura completa por modelo. No es parte de la puerta |
 
-Not yet done: the org-wide `.github` defaults pass, two repositories are not cloned locally
-(`Databases` among them), and the licence reconciliation ADR 0007 requires is still open on
-`territorio` and one other repository.
+Las reglas, los hechos y las configuraciones son registros: agregar uno es una función y un
+decorador. La política es una tabla en un perfil. Si afinar exige editar el cuerpo de una función,
+la costura está mal.
 
-## Quickstart
+### Consumidores
 
-Everything below runs on the host, from any directory.
+Nada importa este repositorio. Se invoca como CLI y se replica en cada repositorio gobernado como
+`.github/repo-docs.py`, donde el workflow `docs` corre sus reglas offline en cada pull request.
+`canon-drift` mantiene esas copias idénticas a esta, así que este repositorio es el único lugar
+donde el motor se edita.
 
-1. Point the tool at your clones. Runs once per machine.
+Cambiar una regla cambia entonces la puerta de control de cada repositorio en el próximo `--fix`.
+Leer [`CONTEXT.md`](CONTEXT.md) antes de agregar una: el vocabulario es estructural.
+
+Las decisiones viven como ADR en [`docs/adr/`](docs/adr) — por qué el checker se replica en cada
+repositorio ([ADR 0004](docs/adr/0004-the-checker-is-vendored-into-every-repo.md)), por qué cambia
+configuraciones de GitHub ([ADR 0003](docs/adr/0003-the-tool-changes-github-settings.md)) y por qué
+la documentación lectora de este repositorio está en español
+([ADR 0006](docs/adr/0006-documentacion-en-espanol.md)). El árbol de archivos por nivel está en
+[`references/layout.md`](references/layout.md); las convenciones — Diátaxis, Keep a Changelog,
+MADR — en [`references/conventions.md`](references/conventions.md).
+
+## Estado
+
+Funciona y está en su primer despliegue. 28 reglas, 5 hechos, 5 sondas de configuración, un perfil
+de dueño.
+
+El barrido semanal audita los doce repositorios del censo de la organización; este repositorio
+queda fuera del censo y se gobierna a sí mismo: pasa su propia puerta de control. La documentación
+lectora de este repositorio está en español según el
+[ADR 0006](docs/adr/0006-documentacion-en-espanol.md), activado con el marcador `.github/docs-es`.
+
+Pendiente: ensanchar el PAT del barrido para que el registro del censo vea lo que el barrido ve
+(tarea abierta en este repositorio).
+
+## Inicio rápido de desarrollo
+
+Todo lo que sigue corre en el host, desde cualquier directorio.
+
+1. Apuntar la herramienta a los clones. Corre una vez por máquina.
 
    ```bash
    cp config.example.json config.json
    $EDITOR config.json          # set "root" to the directory holding your clones
    ```
 
-   `config.json` is gitignored — it holds a machine path, never policy.
+   `config.json` está en `.gitignore` — guarda una ruta de máquina, nunca política.
 
-2. Confirm it can see the repositories.
+2. Confirmar que la herramienta ve los repositorios.
 
    ```bash
    python3 scripts/docs.py discover
    ```
 
-   Expect a JSON map of every clone whose owner has a profile. Owners without one are listed under
-   `unmanaged` and are never touched. An empty `repos` map means `root` is wrong.
+   Devuelve un mapa JSON de cada clon cuyo dueño tiene perfil. Los dueños sin perfil quedan bajo
+   `unmanaged` y nunca se tocan. Un mapa `repos` vacío significa que `root` está mal.
 
-3. Audit one repository.
+3. Auditar un repositorio.
 
    ```bash
    python3 scripts/docs.py check gestion --explain
    ```
 
-   Exit code 0 means no errors; 1 means at least one. Warnings never fail. `--explain` prints why
-   each rule exists, so a finding you disagree with names the line to edit.
+   Código de salida 0 significa sin errores; 1 significa al menos uno. Los avisos nunca fallan la
+   corrida. `--explain` imprime por qué existe cada regla, así que un hallazgo en desacuerdo nombra
+   la línea a editar.
 
-4. Audit everything and record the result.
+4. Auditar todo y registrar el resultado.
 
    ```bash
    python3 scripts/docs.py check --all --save-baseline
    ```
 
-   Later runs diff against `baseline.json`: what is new, what is resolved, what is still open.
+   Las corridas posteriores se comparan con `baseline.json`: qué es nuevo, qué se resolvió, qué
+   sigue abierto.
 
-If a step fails, the message names the cause. The most common is `root` pointing somewhere with no
-clones in it.
+Si un paso falla, el mensaje nombra la causa. La más común es `root` apuntando a un directorio sin
+clones.
 
-## Install
+### Instalación
 
-No dependencies. Python 3.9 or newer, `git`, and `gh` authenticated with `repo` and `admin:org` for
-the rules that read organisation state.
+Sin dependencias. Python 3.9 o posterior, `git`, y `gh` autenticado con `repo` y `admin:org` para
+las reglas que leen estado de la organización.
 
-The skill is loaded by symlink, so the repository and the skill are the same files:
+La skill se carga por symlink, así que el repositorio y la skill son los mismos archivos:
 
 ```bash
 ln -s "$PWD" ~/.claude/skills/repo-docs
 ```
 
-Verify with `python3 scripts/docs.py selftest`, which builds a temporary repository and asserts the
-destructive paths are safe.
+Verificar con `python3 scripts/docs.py selftest`, que construye un repositorio temporal y aserta
+que los caminos destructivos son seguros.
 
-## Commands
+## Licencia
 
-| Command | Does |
-|---|---|
-| `discover [--clone]` | Map managed clones; refuse unmanaged owners |
-| `scan <repo>` | Inventory as JSON. Never writes |
-| `check <repo\|--all>` | The gate. `--fix`, `--offline`, `--explain`, `--save-baseline` |
-| `outline <repo>` | The README section contract and what is missing from it |
-| `licences <repo>` | What the repo declares, and every third-party licence present |
-| `scaffold <repo> --write` | Write missing files. Never overwrites |
-| `harvest` | Refresh `canon/` from the profile's exemplar |
-| `settings <repo>` | Probe GitHub state; `--apply-settings` to change it |
-| `pr <repo>` | Draft PR of documentation changes only |
-| `audit <repo>` | Prompt for a full model read. Not part of the gate |
-
-Rules, facts and settings are registries: adding one is a function and a decorator. Policy is a
-table in a profile. If tuning requires editing a function body, the seam is wrong.
-
-## Consumers
-
-Nothing imports this. It is invoked as a CLI, and vendored into each governed repository as
-`.github/repo-docs.py`, where the `docs` workflow runs its offline rules on every pull request.
-`canon-drift` keeps those copies identical to this one, so this repository is the only place the
-engine is edited.
-
-Changing a rule therefore changes every repository's gate at the next `--fix`. Read
-[`CONTEXT.md`](CONTEXT.md) before adding one — the vocabulary is load-bearing.
-
-## Licence
-
-GNU Affero General Public License v3.0 or later — see [`LICENSE`](LICENSE). This matches the
-organisation-wide posture recorded in
-[gestion ADR-0010](https://github.com/APS-Conecta/gestion/blob/main/docs/adr/0010-agpl-across-the-org.md),
-which moved to `gestion` from a product repository on 2026-08-08 because an org-wide decision does
-not live in one product's repository. The
-tool depends on nothing outside the Python standard library, so there are no third-party notices to
-carry.
+GNU Affero General Public License v3.0 o posterior — véase [`LICENSE`](LICENSE). Coincide con la
+postura de toda la organización registrada en el
+[ADR-0010 de gestion](https://github.com/APS-Conecta/gestion/blob/main/docs/adr/0010-agpl-across-the-org.md),
+movida a `gestion` desde un repositorio de producto el 2026-08-08, porque una decisión de toda la
+organización no vive en el repositorio de un producto único. La herramienta no depende de nada
+fuera de la biblioteca estándar de Python, así que no hay avisos de terceros que llevar; los avisos
+y licencias de la organización viven en
+[Aviso y licencias](https://aps-conecta.github.io/documentation/aviso.html).

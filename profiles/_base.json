@@ -65,6 +65,7 @@
     "content": "The content model — what a non-developer edits, and where.",
     "commands": "Every command and what it does. This is the public surface of a CLI; link to the source rather than restating behaviour."
   },
+  "_comment_levels": "No docs/index.md at any level: navigation is the README's Documentación section, not a second file to maintain (ADR-0006).",
   "levels": {
     "lite": [
       "README.md",
@@ -79,7 +80,6 @@
       "CODEOWNERS",
       "PULL_REQUEST_TEMPLATE.md",
       "ISSUE_TEMPLATE",
-      "docs/index.md",
       ".githooks/pre-commit",
       ".github/workflows/docs.yml"
     ],
@@ -92,7 +92,6 @@
       "CODEOWNERS",
       "PULL_REQUEST_TEMPLATE.md",
       "ISSUE_TEMPLATE",
-      "docs/index.md",
       ".githooks/pre-commit",
       ".github/workflows/docs.yml",
       "docs/adr"

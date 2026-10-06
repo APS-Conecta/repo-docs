@@ -52,7 +52,7 @@ PROFILES = _resource("profiles")
 # Deliberately not a `string.Template` placeholder: this whole file is rendered, so a placeholder
 # here would also be substituted inside the comparison below that reads it. Every dollar-sigil token
 # in this file is substituted on the way out, which is why none of the prose in it writes one.
-CANON_STAMP = "7df6410c98d8"
+CANON_STAMP = "ceaf3e121fd2"
 
 # ---- craft vs decision (ADR 0002) --------------------------------------------------
 # Every rule below is craft: true of documentation anywhere. Every rule's PARAMETERS are
@@ -87,6 +87,25 @@ PROHIBITION = re.compile(r"\bnever\b|\bdo not\b|\bdon'?t\b|\bmust not\b|\bno lon
 # and hid a real phantom command — that lesson is about *retirement* markers on any sentence. Here the
 # whole sentence is about our licence already, so tense is the only thing left to read.
 PAST_LICENCE = re.compile(r"\bwas\b|\bwere\b|\bused to\b|\buntil\b|\bpredates?\b|\bhad been\b", re.I)
+
+# Front matter is the LEADING `---` block only: `\A` anchors at byte zero and the pattern is
+# only ever matched, never searched, so a `tipo: guia` block quoted mid-page as an example types
+# nothing — the page does not declare it about itself. Three regexes, not a YAML parser: stdlib
+# only, and the shapes under check are one key and one heading.
+FRONT_MATTER = re.compile(r"\A---\n(.*?)\n---[ \t]*\n?", re.S)
+TIPO_GUIA = re.compile(r"^tipo:[ \t]*gu[ií]a[ \t]*$", re.I | re.M)
+VERIFICACION = re.compile(r"^#{1,6}[ \t]+verificaci[oó]n\b", re.I | re.M)
+
+# THE single accent-fold seam: every comparison that must read «Documentación» and
+# «Documentacion» as the same word folds through here. Accents are typography, not identity —
+# but identity only for COMPARISON; facts record the text as written, so a second fold
+# anywhere else would drift from this one.
+_ACCENTS = str.maketrans("áéíóúñü", "aeiounu")
+
+
+def _fold(text: str) -> str:
+    return text.lower().translate(_ACCENTS)
+
 
 CHECKS: list = []
 FACTS: dict = {}
@@ -368,6 +387,13 @@ def archetype(repo: Path, stacks: list, name: str = None) -> str:
     return "library"
 
 
+def readme_rel(name: str) -> str:
+    """The readme of record: forked repos keep theirs at .github/README.md (repo_readmes),
+    everyone else at the root. The legacy section set reads the root file only; the
+    Spanish H2 contract reads the resolved one."""
+    return (P.get("repo_readmes") or {}).get(name or "", "README.md")
+
+
 def find_health(repo: Path) -> dict:
     """Resolve each health file in GitHub's precedence order. First hit wins."""
     hits = {}
@@ -382,7 +408,7 @@ def find_health(repo: Path) -> dict:
     for name in ("README.md", "LICENSE", "CHANGELOG.md"):
         if (repo / name).exists():
             hits[name] = name
-    for extra in ("docs/index.md", ".githooks/pre-commit", ".github/workflows/docs.yml", "docs/adr",
+    for extra in (".githooks/pre-commit", ".github/workflows/docs.yml", "docs/adr",
                   "profile/README.md"):     # the org level requires it, so it must be detectable
         if (repo / extra).exists():
             hits[extra] = extra
@@ -536,6 +562,15 @@ def scan(repo: Path) -> dict:
         sections = [t.lower() for _, t in HEADING.findall(rt)] \
             + [t.lower() for t in BOLD_LABEL.findall(rt)] \
             + [t.lower() for t in TABLE_CELL.findall(rt)]
+    # Resolved readme (forks carry theirs at .github/README.md — repo_readmes). The Spanish H2
+    # contract reads THIS file: ordered, `##`-only, lowercased but NOT folded — the fold is the
+    # rule's comparison seam; the fact records what the file actually says.
+    rel_readme = readme_rel(name)
+    h2s = []
+    resolved = repo / rel_readme
+    if resolved.exists():
+        h2s = [t.lower() for marks, t in HEADING.findall(resolved.read_text(errors="replace"))
+               if marks == "##"]
     return {
         "org": org, "repo": name, "path": str(repo), "branch": branch,
         "default_branch": default_branch(repo),
@@ -543,9 +578,13 @@ def scan(repo: Path) -> dict:
         "license_kind": license_kind(repo), "health": find_health(repo),
         "governed": files, "docs": sorted(f for f in files if f.startswith("docs/")),
         "adrs": sorted(f for f in files if "/adr/" in f or f.startswith("adr/")),
-        "readme_sections": sections, "nested": sorted(set(nested)),
+        "readme_sections": sections, "readme": rel_readme, "readme_h2s": h2s,
+        "nested": sorted(set(nested)),
         "doc_lang": doc_lang(repo, files),
         "has_ci": (repo / ".github" / "workflows").is_dir(),
+        # Spanish opt-in (ADR 0006): the marker is this repo's own decision, so the probe
+        # reads the per-repo parameter — never the module ROOT.
+        "docs_es": (repo / ".github" / "docs-es").exists(),
     }
 
 
@@ -869,6 +908,46 @@ def documented_commands(repo: Path, files: list) -> dict:
     return found
 
 
+# Spanish body-prose calibration (ADR 0006): real Spanish runs 25-40% density over the closed
+# 12-word stopword set, English near zero, so a 5% bar with a 20-token floor separates them
+# with an order of magnitude both ways and needs no accent table. A roughly half-English file
+# reads clean at the line — accepted for R1a, tightened only if R4 walkthroughs miss.
+ES_PROSE_MIN_TOKENS = 20
+ES_PROSE_DENSITY = 0.05
+
+
+def prose_tokens(repo: Path, f: str) -> list:
+    """The prose of one file: fenced blocks toggled out, inline code spans blanked
+    (same-length blanks keep the later spans' offsets valid), headings counted — a
+    heading is prose. Tokenized exactly as doc_lang tokenizes: lowercased, accents
+    native, so the one stopword set serves both readers."""
+    out = []
+    fenced = False
+    for line in (repo / f).read_text(errors="replace").splitlines():
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        for a, b in _code_spans(line):
+            line = line[:a] + " " * (b - a) + line[b:]
+        out += re.findall(r"[a-záéíóúñ]+", line.lower())
+    return out
+
+
+def spanish_required(f: str, repo: str) -> bool:
+    """ADR 0006's must-list: does this file owe Spanish body prose? An entry matches the
+    path EXACTLY, or as a directory prefix when it ends in '/'. NEVER a suffix match —
+    `README.md` must not capture docs/guias/README.md (the trap this function exists to
+    avoid). The documentation repo alone widens the list: aviso.md and the four directory
+    trees are that repo's readers' language, not the org's."""
+    entries = list(P.get("must_be_spanish") or [])
+    if repo == "documentation":
+        entries += list(P.get("must_be_spanish_documentation") or [])
+    return any(f == entry or (entry.endswith("/") and f.startswith(entry))
+               for entry in entries)
+
+
 # ---------------------------------------------------------------- rules
 
 @rule("missing-required", "error")
@@ -915,6 +994,20 @@ def _r_tracked_absent(ctx):
         yield Finding("tracked-not-present", "error", f, None,
                       "git tracks it but the working tree does not have it — stage the deletion "
                       "or restore the file")
+
+
+@rule("retired-paths", "error")
+def _r_retired(ctx):
+    if not ctx["facts"]["docs_es"]:
+        return                      # the retired-path contract is ADR 0006's, an opt-in regime
+    # Probe the working tree, never the index: an untracked straggler or a non-markdown file
+    # (docs/manuals/style.css) is invisible to tracked_md() and equally present on disk. The
+    # entry travels verbatim — a directory prefix keeps its slash, so the finding names the
+    # retirement itself, not whichever member file happened to survive.
+    for entry in P.get("retired_paths") or ():
+        if (ctx["path"] / entry).exists():
+            yield Finding("retired-paths", "error", entry, None,
+                          "retired path still present — delete it (ADR 0006)")
 
 
 @rule("license-posture", "error")
@@ -1326,8 +1419,63 @@ def _r_adr(ctx):
                               "marked superseded but does not link forward")
 
 
+@rule("diataxis-verification", "warn")
+def _r_diataxis(ctx):
+    """A how-to guide owes the reader a way to check that it worked — that separation from
+    reference material is Diátaxis. The guide type is declared where a machine can read it
+    (front matter `tipo: guia`), so the missing Verificación section can be found the same way.
+    Typing a guide is craft, not language policy: NOT gated on the Spanish opt-in marker, and an
+    English repo may carry typed guides too."""
+    for f in ctx["files"]:
+        text = (ctx["path"] / f).read_text(errors="replace")
+        m = FRONT_MATTER.match(text)
+        if not m or not TIPO_GUIA.search(m.group(1)):
+            continue
+        if not VERIFICACION.search(text[m.end():]):
+            yield Finding("diataxis-verification", "warn", f, None,
+                          "front matter tipo: guia but no Verificación heading — a guide must "
+                          "tell the reader how to check it worked")
+
+
 @rule("readme-sections", "warn")
 def _r_readme(ctx):
+    if ctx["facts"]["docs_es"]:
+        # Spanish regime (ADR 0006): an opted-in repo's readme owes its sections IN ORDER plus a
+        # notices link — presence alone no longer holds. Severity is decided per Finding, never
+        # per rule, so the warn registration above (kept for the legacy path) does not soften
+        # these errors.
+        rel = ctx["facts"]["readme"]
+        h2s = [_fold(h) for h in ctx["facts"]["readme_h2s"]]
+        last, flagged = -1, False
+        for _slug, want in P["docs_es_sections"]:
+            want_f = _fold(want)
+            if want_f not in h2s:
+                yield Finding("readme-sections", "error", rel, None,
+                              f"missing README section {want!r}")
+                continue
+            at = h2s.index(want_f)
+            if at < last and not flagged:
+                yield Finding("readme-sections", "error", rel, None,
+                              f"README section {want!r} is out of order — the contract "
+                              f"fixes the order")
+                flagged = True
+            last = at
+        if _fold("licencia") not in h2s:
+            return                  # the presence error above already names the section
+        sect, inside = [], False
+        for ln in (ctx["path"] / rel).read_text(errors="replace").splitlines():
+            m = HEADING.match(ln)
+            if m and len(m.group(1)) == 2:
+                inside = _fold(m.group(2)) == _fold("licencia")
+                continue
+            if inside:
+                sect.append(ln)
+        needles = [n.lower() for n in P["docs_es_licence_link"]]
+        urls = [m.group(1).lower() for m in MD_LINK.finditer("\n".join(sect))]
+        if not any(all(n in u for n in needles) for u in urls):
+            yield Finding("readme-sections", "error", rel, None,
+                          "Licencia section must link the organisation notices document")
+        return
     have = " ".join(ctx["facts"]["readme_sections"])
     if not have:
         return
@@ -1380,6 +1528,8 @@ def _r_pii(ctx):
 
 @rule("doc-language", "warn")
 def _r_lang(ctx):
+    if ctx["facts"]["docs_es"]:
+        return  # Spanish opt-in: the per-file rule owns language from here
     want = P.get("doc_language")
     lang = ctx["facts"]["doc_lang"]
     if not want or ctx["facts"]["archetype"] == "org-profile":
@@ -1387,6 +1537,30 @@ def _r_lang(ctx):
     if lang not in (want, "n/a"):
         yield Finding("doc-language", "warn", None, None,
                       f"repo docs are {lang}; this owner's policy is {want!r}")
+
+
+@rule("doc-language-es", "error")
+def _r_doclang_es(ctx):
+    """ADR 0006: on an opted-in repo, the must-list files owe Spanish BODY prose. Code is
+    never prose — fenced blocks and inline code spans are excluded before the density is
+    measured, so an English transcript inside a Spanish guide is not a finding. Silent
+    dormancy: a repo without the marker never reaches here (the legacy aggregate owns it)."""
+    if not ctx["facts"]["docs_es"]:
+        return
+    stops = set(P["es_stopwords"])
+    repo = ctx["facts"]["repo"]
+    for f in ctx["files"]:
+        # is_history guards the runtime despite the must-list naming no history path: the
+        # documentation repo's usuario/ prefix would capture usuario/CHANGELOG.md.
+        if is_history(f) or not spanish_required(f, repo):
+            continue
+        tokens = prose_tokens(ctx["path"], f)
+        if len(tokens) < ES_PROSE_MIN_TOKENS:
+            continue          # too little prose to judge a language from
+        hits = sum(t in stops for t in tokens)
+        if hits / len(tokens) < ES_PROSE_DENSITY:
+            yield Finding("doc-language-es", "error", f, None,
+                          "body prose is not Spanish (fenced and inline code excluded)")
 
 
 @rule("nested-repo", "info")
@@ -1407,6 +1581,7 @@ def _r_branch(ctx):
 RATIONALE = {
     "missing-required": "Community-standard files absent; 5 repos lack CONTRIBUTING today.",
     "tracked-not-present": "A tracked file the tree lacks used to kill the run with a traceback.",
+    "retired-paths": "ADR 0006 retired these paths; presence is the defect, tracked or not.",
     "license-posture": "ADR 0010: AGPL-3.0-or-later org-wide, inherited from what the apps link.",
     "canon-drift": "Mechanical files have one correct form; drift is a bug, not a variant.",
     "canon-stamp": "A vendored copy has no canon/ to compare against; it carries the digest instead.",
@@ -1417,16 +1592,20 @@ RATIONALE = {
     "fact-vs-reality": "A claim a machine can check must match the machine.",
     "claim-boxes": "Unchecked boxes are a backlog hiding in a document.",
     "adr-status": "22+ ADRs, zero Status fields — nothing can be superseded.",
+    "diataxis-verification": "A typed guide (tipo: guia) must tell the reader how to check it worked.",
     "unfilled-contract": "A shipped outline looks like documentation and is not.",
     "licence-declaration": "Apps declare a licence in appinfo, composer and package at once.",
     "licence-inventory": "The notices document must match what is actually installed.",
     "licence-prose": "SKILL.md and the public profile still called the org proprietary after 0010.",
     "phantom-command": "A documented command with no target is a lie, not a gap.",
     "unverified-command": "8 of gestion's 14 documented make commands are run by no gate.",
-    "readme-sections": "Presence, never order; archetype decides the extras.",
+    "readme-sections": "Non-opted repos: presence, never order; the archetype decides the extras. "
+                       "Opted-in repos (.github/docs-es, ADR 0006): five Spanish sections, one "
+                       "order, a notices link — at error.",
     "absolute-path": "AGENTS.md:32 hardcodes /srv/syncthing/CESFAMS.",
     "personal-data": "Names and personal addresses belong in CONTRIBUTORS/LICENSE only.",
-    "doc-language": "Repo docs English; only the org profile is bilingual.",
+    "doc-language": "Aggregate, and only for repos without the marker; opted-in repos move to the per-file must-list.",
+    "doc-language-es": "ADR 0006: opted-in repos owe Spanish body prose on the must-list; code never counts.",
     "nested-repo": "epidemiologia sits inside gestion/apps with no .gitmodules.",
     "branch-name": "Every repo is on main; another default is a drift signal.",
 }
@@ -1753,9 +1932,124 @@ def selftest() -> None:
         (repo / "CONTRIBUTING.md").write_text("A single developer works here.\n")
         (repo / "LICENSE").write_text("MIT License\nCopyright (c) 2026\n")
         (repo / "docs" / "adr" / "0001-x.md").write_text("# x\n\nNo status field here.\n")
+        # Diátaxis front-matter typing, seeded in the ENGLISH demo repo on purpose — typing a
+        # guide is craft, not language policy, so the rule is not gated on the Spanish marker.
+        # Headings stay stopword-free and prose stays link-, name- and licence-free so demo's
+        # doc_lang fact and every earlier assert are unchanged.
+        (repo / "docs" / "guias").mkdir(parents=True, exist_ok=True)
+        (repo / "docs" / "guias" / "sin.md").write_text(
+            "---\ntipo: guia\n---\n\n# Install the scheduler\n\nRun the installer, then continue.\n")
+        (repo / "docs" / "guias" / "con-tilde.md").write_text(
+            "---\ntipo: guía\n---\n\n# Install the scheduler\n\nRun the installer, then continue.\n\n"
+            "## Verificación\n\nThe scheduler answers a status call.\n")
+        (repo / "docs" / "guias" / "sin-tilde.md").write_text(
+            "---\ntipo: guia\n---\n\n# Install the scheduler\n\nRun the installer, then continue.\n\n"
+            "## Verificacion\n\nThe scheduler answers a status call.\n")
+        # A quoted front-matter block types nothing: this page does not start with `---`, so the
+        # example below is inert and the rule must leave the file alone (leading-block scoping).
+        (repo / "docs" / "ejemplo-front-matter.md").write_text(
+            "# Front matter example\n\n"
+            "A guide type is declared in a leading block, quoted here as an example:\n\n"
+            "```\n---\ntipo: guia\n---\n```\n\n"
+            "The quoted block types nothing; this page is not a guide.\n")
         sh(["git", "-C", str(repo), "add", "-A"])
         sh(["git", "-C", str(repo), "-c", "user.email=t@t", "-c", "user.name=t",
             "commit", "-qm", "init"])
+        # retired-paths: the English demo holds a retired path while NOT opted in. Untracked
+        # and heading-less, so not one existing demo fact can see it — the silence asserted
+        # below is the opt-in gate, not an accident of the fixture.
+        (repo / "BUGS.md").write_text("no headings, untracked\n")
+
+        # The Spanish opt-in fixture: a sibling under the same temp base, named demo-es by its
+        # REMOTE — identity is load-bearing, scan() never trusts the directory name. The empty
+        # `.github/docs-es` marker is the whole opt-in; the README carries one stopword heading
+        # («de» is in es_stopwords) and no H1 — «demo-es» tokenizes stopword-free and would vote
+        # English, leaving the aggregate at "mixed" instead of "es".
+        repo_es = base / "demo-es"
+        (repo_es / ".github").mkdir(parents=True)
+        sh(["git", "init", "-q", "-b", "main", str(repo_es)])
+        sh(["git", "-C", str(repo_es), "remote", "add", "origin",
+            f"https://github.com/{ORG}/demo-es.git"])
+        (repo_es / ".github" / "docs-es").write_text("")
+        (repo_es / "README.md").write_text("""## Qué es
+
+Repositorio de demostración del regulador.
+
+### Roles y permisos
+
+## Documentacion
+
+La guía retirada en inglés: `the user guide lives here and describes every command`.
+
+```
+This block quotes the retired English README verbatim, exactly as the upstream project
+shipped it before the documentation moved to Spanish. It stays in the file as a fenced
+example because the language rules must exclude quoted material from every density
+measurement: what sits inside a fence is not the prose of this repository.
+
+Quick start. Install the tool, point it at a clone, and run the audit. The audit walks
+the tracked Markdown surface of that clone, reads every heading, and reports each
+missing section together with the prompt that explains what belongs there. Nothing is
+written back unless the fix flag is passed, and even then the fix only restores the
+mechanical files it owns.
+
+What this is. A documentation control program. It audits, it scaffolds, and it opens
+pull requests for the changes it can apply mechanically. It does not write documentation
+for anyone; it says exactly what is missing and where the canonical copy lives.
+
+Status. The engine is stable. The organisation runs it every week against every
+repository it manages, compares each run against a recorded baseline, and reads only
+the differences, so findings accepted by decision stay quiet. A degraded run is never
+recorded, because what a run failed to evaluate is not the same as what it cleared.
+```
+
+### Objetivos y alcance
+
+## Estado
+
+### Tareas y avances
+
+## Inicio rápido de desarrollo
+
+Pasos de instalación del entorno.
+
+### Requisitos y herramientas
+
+## Licencia
+
+Ver el [aviso y licencias](https://aps-conecta.github.io/documentation/aviso/).
+""")
+        # English seeds, all heading-less prose-only bodies — doc_lang counts headings, so
+        # these add no English vote and facts_es["doc_lang"] stays "es" (risk r1).
+        # CONTRIBUTING.md is org-wide must-list and fires; usuario/introduccion.md is
+        # documentation-repo scoped and stays silent here; usuario/CHANGELOG.md stays silent
+        # under every ctx (is_history); docs/guias/README.md pins exact, never suffix, match.
+        (repo_es / "CONTRIBUTING.md").write_text(
+            "How to contribute: clone the repository, create a feature branch, make your "
+            "changes, run the local checks, and open a draft pull request. Every change "
+            "ships with documentation; a maintainer reviews prose before merge.\n")
+        (repo_es / "usuario").mkdir(parents=True)
+        (repo_es / "usuario" / "introduccion.md").write_text(
+            "Introduction for staff users: what the platform shows, where to find patient "
+            "records, and how support requests are handled by the administrative team.\n")
+        (repo_es / "usuario" / "CHANGELOG.md").write_text(
+            "Changelog for user documentation: initial import, and a second pass over the "
+            "guides with corrections reported by readers. A third pass fixed navigation "
+            "labels across every page of the manual.\n")
+        (repo_es / "docs" / "guias").mkdir(parents=True)
+        (repo_es / "docs" / "guias" / "README.md").write_text(
+            "Index of the guides folder: each document below explains one task, with steps "
+            "and examples. This folder-level index is not the repository README.\n")
+        # retired-paths: a committed NON-markdown member — tracked_md() can never list it,
+        # which pins that the probe reads the working tree, not the governed set
+        (repo_es / "docs" / "manuals").mkdir(parents=True, exist_ok=True)
+        (repo_es / "docs" / "manuals" / "style.css").write_text("body { color: red; }\n")
+        sh(["git", "-C", str(repo_es), "add", "-A"])
+        sh(["git", "-C", str(repo_es), "-c", "user.email=t@t", "-c", "user.name=t",
+            "commit", "-qm", "init"])
+        # retired-paths: an untracked straggler — presence in the working tree alone must
+        # fire; heading-less so the doc_lang heading vote never sees it either way
+        (repo_es / "BUGS.md").write_text("known issues, untracked\n")
 
         # nested repo must halt the walk
         nested = repo / "apps" / "inner"
@@ -1771,8 +2065,139 @@ def selftest() -> None:
             assert "apps/inner" in facts["nested"], facts["nested"]
             assert not any(f.startswith("apps/inner") for f in facts["governed"])
 
+            # The opt-in gate, both directions. demo carries no marker, so its gate stays shut
+            # while every demo assert above passes unmodified; demo-es carries the marker, reads
+            # Spanish against this owner's "en" policy, and the legacy aggregate rule yields
+            # nothing — the per-file Spanish rule owns language on opted-in repos.
+            assert facts["docs_es"] is False, "no marker: the gate must stay shut"
+            assert P["doc_language"] == "en", P["doc_language"]
+            facts_es = scan(repo_es)
+            assert facts_es["docs_es"] is True, "the .github/docs-es marker must trip the fact"
+            assert facts_es["repo"] == "demo-es", facts_es["repo"]
+            assert facts_es["doc_lang"] == "es", facts_es["doc_lang"]
+            ctx_es = {"path": repo_es, "facts": facts_es, "files": facts_es["governed"],
+                      "level": "full", "org_mode": False, "fix": False, "known_repos": ["demo"]}
+            assert list(_r_lang(ctx_es)) == [], "opted in: the aggregate rule stands down"
+
+            # doc-language-es, every direction. The English seeds are heading-less, so the
+            # aggregate never saw them; this rule reads body prose with code excluded.
+            fired = list(_r_doclang_es(ctx_es))
+            assert [(f.rule, f.severity, f.file, f.msg) for f in fired] == \
+                [("doc-language-es", "error", "CONTRIBUTING.md",
+                  "body prose is not Spanish (fenced and inline code excluded)")], fired
+            # silent: usuario/introduccion.md (repo gate), usuario/CHANGELOG.md (is_history
+            # guard), docs/guias/README.md (exact match, never a suffix) — pinned by absence.
+            # The repo gate flips ONLY the repo fact: the same ctx as "documentation" fires
+            # introduccion.md via its directory prefix and still spares the changelog.
+            ctx_doc = dict(ctx_es, facts=dict(ctx_es["facts"], repo="documentation"))
+            assert sorted(f.file for f in _r_doclang_es(ctx_doc)) == \
+                ["CONTRIBUTING.md", "usuario/introduccion.md"]
+            # code exclusion, both axes: the fenced block and the inline span are English
+            # raw bytes that prose_tokens drops, and the Spanish prose that remains clears
+            # both thresholds — so the README on the must-list yields nothing.
+            readme_tokens = prose_tokens(repo_es, "README.md")
+            assert len(readme_tokens) >= ES_PROSE_MIN_TOKENS, len(readme_tokens)
+            hits = sum(w in set(P["es_stopwords"]) for w in readme_tokens)
+            assert hits / len(readme_tokens) >= ES_PROSE_DENSITY, hits
+            raw = re.findall(r"[a-záéíóúñ]+",
+                             (repo_es / "README.md").read_text(errors="replace").lower())
+            for probe in ("quick", "verbatim", "describes"):   # fenced, fenced, inline
+                assert probe in raw and probe not in readme_tokens, probe
+            excluded = set(raw) - set(readme_tokens)
+            assert excluded and not excluded & set(P["es_stopwords"]), sorted(excluded)
+            # silent dormancy: demo carries no marker and yields nothing; flipping ONLY the
+            # docs_es fact makes its English README fire — the org-wide list at work.
+            ctx_demo = {"path": repo, "facts": facts, "files": facts["governed"],
+                        "level": "full", "org_mode": False, "fix": False,
+                        "known_repos": ["demo"]}
+            assert list(_r_doclang_es(ctx_demo)) == []
+            ctx_demo_in = dict(ctx_demo, facts=dict(ctx_demo["facts"], docs_es=True))
+            assert [f.file for f in _r_doclang_es(ctx_demo_in)] == ["README.md"]
+
+            # --- demo-es, phase 3: the ordered Spanish H2 contract -----------------------
+            # The five-section rewrite keeps every earlier precondition: the fenced English
+            # block and the inline backtick English keep doc-language-es silent, and the
+            # «Inicio rápido de desarrollo» H2 plus the four «y»-carrying H3 subheadings hold
+            # the doc_lang heading vote at es=5 vs en=4 (the four stopword-free contract H2s
+            # count en; «Qué es» never matches the stopword «que» — doc_lang does not fold).
+            # H3s never enter readme_h2s, the H2-only fact.
+            readme_es = repo_es / "README.md"
+            original_es = readme_es.read_text()
+
+            def ctx_es_now():
+                ctx_es["facts"] = scan(repo_es)     # the contract facts come from scan()
+                return ctx_es
+
+            assert list(_r_readme(ctx_es_now())) == [], "the contract README is clean"
+            assert ctx_es["facts"]["readme"] == "README.md"    # unkeyed repo -> root default
+            assert ctx_es["facts"]["readme_h2s"] == ["qué es", "documentacion", "estado",
+                                                     "inicio rápido de desarrollo", "licencia"], \
+                ctx_es["facts"]["readme_h2s"]
+
+            # fires-missing: one section dropped -> exactly one ERROR, naming it
+            readme_es.write_text(original_es.replace("## Estado\n", ""))
+            fired = list(_r_readme(ctx_es_now()))
+            assert [f.severity for f in fired] == ["error"], [str(f) for f in fired]
+            assert fired[0].msg == "missing README section 'Estado'", fired[0].msg
+            readme_es.write_text(original_es)
+
+            # fires-order: two sections swapped -> one order ERROR, never a "missing"
+            readme_es.write_text(original_es.replace("## Documentacion\n", "## @swapped@\n")
+                                 .replace("## Estado\n", "## Documentacion\n")
+                                 .replace("## @swapped@\n", "## Estado\n"))
+            fired = list(_r_readme(ctx_es_now()))
+            assert [f.severity for f in fired] == ["error"], [str(f) for f in fired]
+            assert "out of order" in fired[0].msg and "Estado" in fired[0].msg, fired[0].msg
+            assert not any("missing" in f.msg for f in fired), "a present heading is never missing"
+            readme_es.write_text(original_es)
+
+            # fires-link: the notices link swapped out -> one ERROR, offline (no network)
+            readme_es.write_text(original_es.replace(
+                "](https://aps-conecta.github.io/documentation/aviso/)",
+                "](https://example.com/otro/)"))
+            fired = list(_r_readme(ctx_es_now()))
+            assert [f.severity for f in fired] == ["error"], [str(f) for f in fired]
+            assert "notices" in fired[0].msg, fired[0].msg
+            readme_es.write_text(original_es)
+            ctx_es_now()                    # leave ctx_es describing the committed tree
+
+            # routing: the fork resolver and its defaults
+            assert readme_rel("AIO") == ".github/README.md"
+            assert readme_rel("IntraVox") == ".github/README.md"
+            assert readme_rel("demo-es") == "README.md"
+            assert readme_rel("no-such-repo") == "README.md" and readme_rel(None) == "README.md"
+
+            # the single fold seam, both directions: accents away, case away
+            assert _fold("Documentación") == "documentacion" and _fold("QUÉ ES") == "que es"
+
+            # silent-non-opted: without the marker the legacy presence-only path is unchanged
+            f_demo = scan(repo)
+            legacy = list(_r_readme({"path": repo, "facts": f_demo, "files": f_demo["governed"],
+                                     "level": "full", "org_mode": False, "fix": False,
+                                     "known_repos": ["demo"]}))
+            assert legacy and all(f.severity == "warn" and f.file == "README.md"
+                                  for f in legacy), \
+                "a repo without the marker keeps the presence-only warn contract"
+
             ctx = {"path": repo, "facts": facts, "files": facts["governed"], "level": "full",
                    "org_mode": False, "fix": False, "known_repos": ["demo"]}
+
+            # retired-paths: fires on both shapes, all errors; clean once both are deleted
+            # with the marker still present; silent on the non-opted demo holding BUGS.md.
+            fired = list(_r_retired(ctx_es))
+            assert sorted(f.file for f in fired) == ["BUGS.md", "docs/manuals/"], \
+                [str(f) for f in fired]
+            assert all(f.severity == "error" for f in fired), [str(f) for f in fired]
+            assert all(f.msg == "retired path still present — delete it (ADR 0006)"
+                       for f in fired)
+            (repo_es / "BUGS.md").unlink()
+            shutil.rmtree(repo_es / "docs" / "manuals")
+            assert (repo_es / ".github" / "docs-es").exists(), \
+                "the clean direction still carries the opt-in marker"
+            assert not list(_r_retired(ctx_es)), \
+                "both retired paths deleted — the rule must be clean"
+            assert not list(_r_retired(ctx)), \
+                "demo holds BUGS.md untracked and is not opted in — the rule must be silent"
 
             assert any(f.rule == "license-posture" for f in _r_licence(ctx))
             assert any("nope.md" in f.msg for f in _r_links(ctx))
@@ -1794,6 +2219,9 @@ def selftest() -> None:
             assert canon_vars(scan(repo))["branch"] == "main"
             sh(["git", "-C", str(repo), "checkout", "-q", "main"])
             assert any(f.rule == "adr-status" for f in _r_adr(ctx))
+            dia = list(_r_diataxis(ctx))
+            assert [f.file for f in dia] == ["docs/guias/sin.md"], [str(f) for f in dia]
+            assert [f.severity for f in dia] == ["warn"], [str(f) for f in dia]
             assert any(f.rule == "fact-contradiction" for f in _r_contradiction(ctx)), \
                 "three-person vs single developer must contradict"
             # CODEOWNERS, not SECURITY.md: GitHub cannot default CODEOWNERS, so it is always a gap when
