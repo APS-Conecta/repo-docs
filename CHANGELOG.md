@@ -8,6 +8,16 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **The census clone root.** The weekly sweep cloned the census into the repo-docs
+  checkout (cwd-relative paths in `census.py run`), so `check --all` walked repo-docs
+  holding the whole org nested inside it and went red on NEW findings a stale baseline
+  could not absorb. `census.py run --root` now clones outside the checkout
+  (`$RUNNER_TEMP/census` in CI, self-tested), the sweep points `REPO_DOCS_ROOT` there,
+  and the baseline is re-recorded from clones at main so today's findings are open and
+  only future drift is NEW — the drift itself is filed as one Task issue per repo.
+
 ### Added
 
 - **The mode table.** `docs/index.md` is rebuilt as the Document × Mode × Reader × Authority table —

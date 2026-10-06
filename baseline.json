@@ -1,5 +1,4 @@
 {
- ".github": [],
  "AIO": [
   "absolute-path|community-containers/borgbackup-viewer/readme.md|absolute host path '/mnt/borgbackup/borg' \u2014 not portable",
   "absolute-path|develop.md|absolute host path '/mnt/docker-aio-config' \u2014 not portable",
@@ -66,7 +65,6 @@
   "missing-required|-|absent: CODEOWNERS",
   "missing-required|-|absent: README.md",
   "missing-required|-|absent: docs/index.md",
-  "nested-repo|.aps-replay-tree|git repo inside this working tree with no .gitmodules",
   "personal-data|AGENTS.md|personal email random@developer.example.org",
   "personal-data|CONTRIBUTING.md|personal email random@developer.example.org",
   "personal-data|community-containers/gitea/readme.md|personal email your@email.com",
@@ -107,20 +105,22 @@
   "claim-boxes|docs/architecture/api-development.md|open commitment, not machine-verifiable",
   "doc-language|-|repo docs are mixed; this owner's policy is 'en'",
   "github-metadata|-|no repository description \u2014 the first documentation anyone reads",
+  "licence-inventory|-|38 dependencies have no machine-readable licence (e.g. @mdi/svg, @nextcloud/axios, @nextcloud/dialogs) \u2014 record them by hand",
   "licence-inventory|THIRD-PARTY-NOTICES.md|41 third-party components and no notices document",
   "personal-data|docs/admin/scenarios.md|personal email hr@acme.example",
   "personal-data|docs/features/file-story-widget.md|personal email username@partner.example.org",
+  "phantom-command|AGENTS.md|`composer run` is documented but no such target or script exists",
   "public-leak|CHANGELOG.md|absolute host path \u2014 this repo is world-readable",
   "public-leak|docs/architecture/api-development.md|unchecked hardening item \u2014 publishes what is not yet defended \u2014 this repo is world-readable",
   "public-leak|docs/architecture/openapi-tooling.md|names local bind addresses \u2014 this repo is world-readable",
   "readme-sections|README.md|no section covering 'quickstart' \u2014 Numbered steps, one action each, the exact copyable command. Every step says where it runs and what output proves it worked.",
   "readme-sections|README.md|no section covering 'what' \u2014 What this is, and explicitly what it is not. Name the boundary a reader could get wrong.",
+  "unverified-command|AGENTS.md|`npm run route-table` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
   "unverified-command|CHANGELOG.md|`npm run l10n:extract` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
   "unverified-command|CHANGELOG.md|`npm run pot` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
   "unverified-command|docs/architecture/openapi-tooling.md|`npm run lint:openapi` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
   "unverified-command|docs/architecture/testing.md|`composer test:unit` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
-  "unverified-command|docs/architecture/testing.md|`npm run ci` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
-  "unverified-command|docs/index.md|`npm run route-table` is documented but run by no gate \u2014 cover it or mark it untested where it appears"
+  "unverified-command|docs/architecture/testing.md|`npm run ci` is documented but run by no gate \u2014 cover it or mark it untested where it appears"
  ],
  "agents": [
   "absolute-path|docs/superpowers/plans/2026-10-03-pi-agent.md|absolute host path '/home/dani/.claude/projects/-home-dani/m' \u2014 not portable",
@@ -164,7 +164,8 @@
  "aps-common": [],
  "epidemiologia": [
   "claim-boxes|docs/fuentes-checklist.md|open commitment, not machine-verifiable",
-  "github-metadata|-|description is Spanish; repo docs are 'en': 'Informaci\u00f3n epidemiol\u00f3gica del MINSAL (alertas, IRAG, dashbo'"
+  "github-metadata|-|description is Spanish; repo docs are 'en': 'Informaci\u00f3n epidemiol\u00f3gica del MINSAL (alertas, IRAG, dashbo'",
+  "licence-inventory|-|5 dependencies have no machine-readable licence (e.g. @nextcloud/initial-state, @nextcloud/l10n, @nextcloud/vue) \u2014 record them by hand"
  ],
  "estadistica": [
   "doc-language|-|repo docs are mixed; this owner's policy is 'en'",
@@ -179,25 +180,26 @@
   "unverified-command|README.md|`make test-integration` is documented but run by no gate \u2014 cover it or mark it untested where it appears"
  ],
  "farmacia": [
+  "fact-vs-reality|docs/manual.md|team_size: doc says 1, authority says 2",
   "github-metadata|-|description is Spanish; repo docs are 'en': 'Vadem\u00e9cum y arsenal farmacol\u00f3gico del CESFAM con importaci\u00f3n'",
-  "licence-inventory|THIRD-PARTY-NOTICES.md|7 third-party components and no notices document",
-  "readme-sections|README.md|no section covering 'config' \u2014 Every setting a reader must change: what it does, its default, and which file it lives in.",
-  "readme-sections|README.md|no section covering 'install' \u2014 How a consumer installs this, the exact command, and which versions are supported.",
-  "readme-sections|README.md|no section covering 'licen' \u2014 Which licence covers this code, and where third-party notices live.",
-  "readme-sections|README.md|no section covering 'quickstart' \u2014 Numbered steps, one action each, the exact copyable command. Every step says where it runs and what output proves it worked.",
-  "readme-sections|README.md|no section covering 'status' \u2014 Where it stands today, dated. What is done, what is not. Never aspirational.",
-  "readme-sections|README.md|no section covering 'what' \u2014 What this is, and explicitly what it is not. Name the boundary a reader could get wrong."
+  "licence-inventory|-|6 dependencies have no machine-readable licence (e.g. @nextcloud/axios, @nextcloud/initial-state, @nextcloud/router) \u2014 record them by hand",
+  "unverified-command|README.md|`make aps-sync` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
+  "unverified-command|README.md|`make deps` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
+  "unverified-command|README.md|`make openapi` is documented but run by no gate \u2014 cover it or mark it untested where it appears"
  ],
  "gestion": [
-  "absolute-path|docs/ARCHITECTURE.md|absolute host path '/srv/tiles' \u2014 not portable",
+  "absolute-path|docs/ARCHITECTURE.md|absolute host path '/srv/aps-conecta/tiles' \u2014 not portable",
   "absolute-path|docs/INSTALLER.md|absolute host path '/mnt/docker-aio-config' \u2014 not portable",
   "absolute-path|docs/INSTALLER.md|absolute host path '/srv/aps-conecta/respaldos' \u2014 not portable",
+  "absolute-path|docs/INSTALLER.md|absolute host path '/srv/aps-conecta/tiles' \u2014 not portable",
   "absolute-path|docs/INSTALLER.md|absolute host path '/srv/aps-conecta/tiles/chile.pmtiles' \u2014 not portable",
   "absolute-path|docs/MIGRATION.md|absolute host path '/mnt/docker-aio-config' \u2014 not portable",
   "absolute-path|docs/MIGRATION.md|absolute host path '/mnt/docker-aio-config/data/daily_backup' \u2014 not portable",
   "absolute-path|docs/MIGRATION.md|absolute host path '/srv/backups/apsconecta/' \u2014 not portable",
   "absolute-path|docs/MIGRATION.md|absolute host path '/srv/backups/apsconecta/apsconecta-' \u2014 not portable",
-  "absolute-path|docs/manuals/ADMIN_MANUAL.md|absolute host path '/srv/tiles' \u2014 not portable",
+  "absolute-path|docs/manuals/ADMIN_MANUAL.md|absolute host path '/srv/aps-conecta/tiles' \u2014 not portable",
+  "absolute-path|docs/manuals/ADMIN_MANUAL.md|absolute host path '/srv/aps-conecta/tiles/chile.pmtiles' \u2014 not portable",
+  "absolute-path|docs/manuals/DEVELOPER_MANUAL.md|absolute host path '/srv/aps-conecta/tiles' \u2014 not portable",
   "claim-boxes|.github/SECURITY.md|open commitment, not machine-verifiable",
   "claim-boxes|.github/SECURITY.md|private-vuln-reporting: box says False, reality is True",
   "claim-boxes|docs/MIGRATION.md|open commitment, not machine-verifiable",
@@ -207,11 +209,7 @@
   "fact-vs-reality|docs/CONVENTIONS.md|team_size: doc says 1, authority says 2",
   "fact-vs-reality|docs/GUIA-CLINICA.md|team_size: doc says 1, authority says 2",
   "github-metadata|-|description is Spanish; repo docs are 'en': 'Suite Nextcloud 34 de operaciones internas para CESFAM chile'",
-  "licence-inventory|-|5 dependencies have no machine-readable licence (e.g. nextcloud, postgres, redis) \u2014 record them by hand",
-  "nested-repo|apps/epidemiologia|git repo inside this working tree with no .gitmodules",
-  "nested-repo|apps/estadistica|git repo inside this working tree with no .gitmodules",
-  "nested-repo|apps/farmacia|git repo inside this working tree with no .gitmodules",
-  "nested-repo|apps/territorio|git repo inside this working tree with no .gitmodules",
+  "licence-inventory|-|4 dependencies have no machine-readable licence (e.g. nextcloud, postgres, redis) \u2014 record them by hand",
   "personal-data|docs/manuals/ADMIN_MANUAL.md|real name 'Charrier' outside CONTRIBUTORS.md/LICENSE/AUTHORS.md/CHANGELOG.md/LICENSING.md",
   "personal-data|docs/manuals/ADMIN_MANUAL.md|real name 'Espinoza' outside CONTRIBUTORS.md/LICENSE/AUTHORS.md/CHANGELOG.md/LICENSING.md",
   "personal-data|docs/manuals/DEVELOPER_MANUAL.md|real name 'Espinoza' outside CONTRIBUTORS.md/LICENSE/AUTHORS.md/CHANGELOG.md/LICENSING.md",
@@ -231,7 +229,6 @@
   "public-leak|docs/ARCHITECTURE.md|absolute host path \u2014 this repo is world-readable",
   "public-leak|docs/BRANDING.md|names local bind addresses \u2014 this repo is world-readable",
   "public-leak|docs/INSTALLER.md|absolute host path \u2014 this repo is world-readable",
-  "public-leak|docs/INSTALLER.md|names local bind addresses \u2014 this repo is world-readable",
   "public-leak|docs/MIGRATION.md|absolute host path \u2014 this repo is world-readable",
   "public-leak|docs/MIGRATION.md|unchecked hardening item \u2014 publishes what is not yet defended \u2014 this repo is world-readable",
   "public-leak|docs/THEMING-MODEL.md|names local bind addresses \u2014 this repo is world-readable",
@@ -239,16 +236,15 @@
   "public-leak|docs/adr/0011-org-wide-facts-live-in-gestion.md|absolute host path \u2014 this repo is world-readable",
   "public-leak|docs/manuals/ADMIN_MANUAL.md|absolute host path \u2014 this repo is world-readable",
   "public-leak|docs/manuals/ADMIN_MANUAL.md|names local bind addresses \u2014 this repo is world-readable",
+  "public-leak|docs/manuals/DEVELOPER_MANUAL.md|absolute host path \u2014 this repo is world-readable",
   "public-leak|docs/manuals/USER_MANUAL.md|names the secrets vault \u2014 this repo is world-readable",
   "public-leak|docs/manuals/USER_MANUAL.md|unchecked hardening item \u2014 publishes what is not yet defended \u2014 this repo is world-readable",
-  "secrets|-|gitleaks flagged findings: ",
   "unverified-command|BUGS.md|`make office-smoke` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
   "unverified-command|CHANGELOG.md|`make help` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
   "unverified-command|CHANGELOG.md|`make uninstall` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
   "unverified-command|README.md|`make down` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
   "unverified-command|README.md|`make fix-mount-perms` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
   "unverified-command|README.md|`make office-down` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
-  "unverified-command|README.md|`make smoke` is documented but run by no gate \u2014 cover it or mark it untested where it appears",
   "unverified-command|README.md|`make up-dev` is documented but run by no gate \u2014 cover it or mark it untested where it appears"
  ],
  "pi-sandbox": [
@@ -271,16 +267,13 @@
   "missing-required|-|absent: README.md",
   "missing-required|-|absent: docs/index.md"
  ],
- "repo-docs": [
-  "adr-status|docs/adr/0005-one-published-surface.md|no Status: field \u2014 cannot be superseded (MADR)",
-  "fact-vs-reality|SECURITY.md|repo_visibility: doc says 'private', authority says 'public'",
-  "public-leak|CHANGELOG.md|absolute host path \u2014 this repo is world-readable"
- ],
  "rpiv-artifacts": [
   "absolute-path|.rpiv/artifacts/designs/2026-09-19_02-23-04_aps-conecta-agnostic-dehardcode-reinstall-org.md|absolute host path '/mnt/docker-aio-config' \u2014 not portable",
   "absolute-path|.rpiv/artifacts/designs/2026-09-19_02-23-04_aps-conecta-agnostic-dehardcode-reinstall-org.md|absolute host path '/mnt/docker-aio-config/data/daily_backup' \u2014 not portable",
   "absolute-path|.rpiv/artifacts/designs/2026-09-19_02-23-04_aps-conecta-agnostic-dehardcode-reinstall-org.md|absolute host path '/srv/backups/apsconecta/' \u2014 not portable",
   "absolute-path|.rpiv/artifacts/designs/2026-09-19_02-23-04_aps-conecta-agnostic-dehardcode-reinstall-org.md|absolute host path '/srv/backups/apsconecta/apsconecta-' \u2014 not portable",
+  "absolute-path|initiatives/docs-es.md|absolute host path '/srv/sync/agent-locks/' \u2014 not portable",
+  "absolute-path|initiatives/docs-es.md|absolute host path '/srv/sync/rpiv-mirror/README.md' \u2014 not portable",
   "broken-links|.rpiv/artifacts/designs/2026-09-19_02-23-04_aps-conecta-agnostic-dehardcode-reinstall-org.md|link target missing: ../CONTEXT.md",
   "broken-links|.rpiv/artifacts/designs/2026-09-19_02-23-04_aps-conecta-agnostic-dehardcode-reinstall-org.md|link target missing: ../apps/README.md",
   "broken-links|.rpiv/artifacts/designs/2026-09-19_02-23-04_aps-conecta-agnostic-dehardcode-reinstall-org.md|link target missing: ../dev/lab-apps.sh",
@@ -349,6 +342,7 @@
  "territorio": [
   "absolute-path|.claude/skills/sprint/SKILL.md|absolute host path '/srv/sync/agent-locks/aps-conecta-org.lo' \u2014 not portable",
   "github-metadata|-|description is Spanish; repo docs are 'en': 'Cartograf\u00eda territorial y asignaci\u00f3n de sectores (OpenStreet'",
+  "licence-inventory|-|13 dependencies have no machine-readable licence (e.g. @geoman-io/leaflet-geoman-free, @mapbox/maki, @nextcloud/axios) \u2014 record them by hand",
   "personal-data|THIRD-PARTY-NOTICES.md|personal email shtylman@gmail.com",
   "personal-data|THIRD-PARTY-NOTICES.md|personal email sindresorhus@gmail.com",
   "unverified-command|.claude/skills/sprint/SKILL.md|`make instance-down` is documented but run by no gate \u2014 cover it or mark it untested where it appears"
