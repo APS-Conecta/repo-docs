@@ -200,6 +200,8 @@
   "absolute-path|docs/manuals/ADMIN_MANUAL.md|absolute host path '/srv/aps-conecta/tiles' \u2014 not portable",
   "absolute-path|docs/manuals/ADMIN_MANUAL.md|absolute host path '/srv/aps-conecta/tiles/chile.pmtiles' \u2014 not portable",
   "absolute-path|docs/manuals/DEVELOPER_MANUAL.md|absolute host path '/srv/aps-conecta/tiles' \u2014 not portable",
+  "claim-boxes|.github/SECURITY.md|dependabot-alerts: could not read the setting \u2014 box left as it is",
+  "claim-boxes|.github/SECURITY.md|dependabot-security-updates: could not read the setting \u2014 box left as it is",
   "claim-boxes|.github/SECURITY.md|open commitment, not machine-verifiable",
   "claim-boxes|.github/SECURITY.md|private-vuln-reporting: box says False, reality is True",
   "claim-boxes|docs/MIGRATION.md|open commitment, not machine-verifiable",

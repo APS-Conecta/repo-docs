@@ -47,4 +47,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.APS_BOT_PAT }}
           REPO_DOCS_ROOT: ${{ runner.temp }}/census
-        run: python3 scripts/docs.py check --all --stamp-error
+        # `check --all` exits 1 on ANY open error finding — 41 sit open in AIO
+        # alone, baselined and known — so the exit code cannot be this job's red
+        # line: the sweep's contract (header above) is red on NEW findings and
+        # stamp drift, and stamp drift surfaces as a NEW canon-stamp fingerprint.
+        # The full log still prints; only the verdict is the grep.
+        run: |
+          python3 scripts/docs.py check --all --stamp-error 2>&1 | tee check.log
+          ! grep -qE '^      NEW' check.log
