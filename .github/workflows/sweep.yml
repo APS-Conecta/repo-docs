@@ -38,18 +38,10 @@ jobs:
           # PAT (Contents: read on the private census repos), visible to this
           # repo through the org secret's repository selection.
           GH_TOKEN: ${{ secrets.APS_BOT_PAT }}
-        run: |
-          set -euo pipefail
-          gh repo clone APS-Conecta/gestion gestion -- -q
-          own="$(sed -n 's/^OWN_APPS="\(.*\)"$/\1/p' gestion/provisioning/phases/12-apps.sh | tr ' ' '\n' | cut -d= -f1)"
-          base="$(python3 -c "import json; print('\n'.join(k for k in json.load(open('baseline.json')) if k not in ('.github', 'repo-docs')))")"
-          census="$(printf '%s\n%s\n' "$own" "$base" | sort -u | grep -v '^$')"
-          for r in $census; do
-            [ -d "$r" ] || gh repo clone "APS-Conecta/$r" "$r" -- -q
-            python3 -c "import json,sys; sys.exit(0 if '$r' in json.load(open('baseline.json')) else 1)" \
-              || { echo "::error::census repo '$r' has no baseline key — canonize it: scripts/docs.py check $r --fix, then scripts/docs.py check --all --save-baseline (org L8-01)"; exit 1; }
-          done
-          echo "census cloned: $(printf '%s ' $census)"
+        # The census (baseline ∪ OWN_APPS, case-insensitive lookup, onboarding
+        # tripwire) lives in scripts/census.py so it can be self-tested — this
+        # call replaces the inline block this step used to carry.
+        run: python3 scripts/census.py run
       - name: Check every repo — new findings red, the stamp is an error here
         env:
           GH_TOKEN: ${{ secrets.APS_BOT_PAT }}

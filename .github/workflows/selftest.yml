@@ -23,3 +23,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: python3 scripts/docs.py selftest
+      - run: python3 scripts/census.py selftest   # census tripwire invariants (scripts/** triggers already cover it)
