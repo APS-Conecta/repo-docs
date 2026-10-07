@@ -145,22 +145,5 @@
   "docs_es_licence_link": [
     "aps-conecta.github.io/documentation",
     "aviso"
-  ],
-  "_comment_docs_line_paths": "PRs changing these path prefixes must carry a 'Docs: APS-Conecta/documentation#<n>' or 'Docs: sin cambios' line (the docs-es plan's Docs: trailer). Code paths only — docs-only PRs owe nothing.",
-  "docs_line_paths": [
-    "l10n/",
-    "src/",
-    "templates/",
-    "appinfo/",
-    "lib/Command/",
-    "lib/Settings/"
-  ],
-  "_comment_pr_exempt_logins": "Automation identities whose PRs never owe a Docs: trailer (their titles are still checked): dependabot, the org bot, Pi's identities and the assistant bots.",
-  "pr_exempt_logins": [
-    "dependabot[bot]",
-    "aps-conecta-bot[bot]",
-    "aps-pi[bot]",
-    "google-labs-jules[bot]",
-    "claude[bot]"
   ]
 }
