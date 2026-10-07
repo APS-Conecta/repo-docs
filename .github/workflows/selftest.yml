@@ -2,14 +2,16 @@
 # closed, harvest refuses an exemplar it cannot name. `selftest` needs canon/ beside the checker,
 # so it runs only here — a vendored copy has no canon/ and dies before asserting anything. docs.yml
 # is canon and identical in every repository, which is why this is a separate file.
+# actionlint lints the canon sources and the rendered workflows alike — no gate parsed workflow
+# YAML before the runner did, and an unquoted scalar once shipped (the R1b quote lesson).
 name: selftest
 
 on:
   pull_request:
-    paths: ["scripts/**", "canon/**", "profiles/**", ".github/workflows/selftest.yml"]
+    paths: ["scripts/**", "canon/**", "profiles/**", ".github/workflows/**"]
   push:
     branches: [main]
-    paths: ["scripts/**", "canon/**", "profiles/**", ".github/workflows/selftest.yml"]
+    paths: ["scripts/**", "canon/**", "profiles/**", ".github/workflows/**"]
 
 permissions:
   contents: read
@@ -22,5 +24,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install actionlint 1.7.12
+        run: |
+          curl -sSfL -o /tmp/actionlint_1.7.12_linux_amd64.tar.gz \
+            "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
+          curl -sSfL -o /tmp/checksums.txt \
+            "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_checksums.txt"
+          # the tarball keeps its asset name: sha256sum --check matches checksums.txt's
+          # entries by filename, and --ignore-missing would silently skip a renamed file
+          cd /tmp && sha256sum --check --ignore-missing checksums.txt
+          sudo tar -xzf actionlint_1.7.12_linux_amd64.tar.gz -C /usr/local/bin actionlint
+          actionlint --version
+      - name: Lint workflows (canon + rendered)
+        # the canon sources lint with their placeholders in place — render() substitutes
+        # them without touching any other byte, so what parses here is what runs there
+        run: actionlint canon/workflows/*.yml .github/workflows/*.yml
       - run: python3 scripts/docs.py selftest
       - run: python3 scripts/census.py selftest   # census tripwire invariants (scripts/** triggers already cover it)

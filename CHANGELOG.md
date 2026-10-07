@@ -29,6 +29,14 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **actionlint guards the workflows.** The selftest job installs a pinned, checksum-verified
+  actionlint 1.7.12 and lints `canon/workflows/*.yml` and `.github/workflows/*.yml` — the
+  canon sources with their placeholders in place, so what parses is what renders. No pipeline
+  check parsed workflow YAML before GitHub's runner did, and the R1b canon `docs.yml` shipped
+  an unquoted `PR gate (Docs: line, English title)` step name — a colon-space in a plain
+  scalar, a parse error only the runner caught, at startup, on the gate's own first live run.
+  The selftest trigger widens to `.github/workflows/**` so every workflow change lints.
+
 - **The PR gate: `pr-gate` and the unfiltered `docs` job.** Canon `workflows/docs.yml`
   loses its paths filter, gains `edited` among its pull_request types (editing the body
   to add the trailer re-runs the gate), runs as job id and name `docs` — the required
