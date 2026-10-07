@@ -34,6 +34,7 @@ harvest [exemplar]              refresh canon/ from the profile's exemplar
 scaffold <repo> [--level L] [--org] [--write]
 settings <repo> [--apply-settings]
 pr <repo>
+pr-gate                         the PR gate: Docs: line + English title (reads $GITHUB_EVENT_PATH)
 selftest
 ```
 

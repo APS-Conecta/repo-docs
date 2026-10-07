@@ -88,8 +88,7 @@
   "public-leak|tests/QA/055-community-containers.md|unchecked hardening item \u2014 publishes what is not yet defended \u2014 this repo is world-readable",
   "public-leak|tests/QA/060-environmental-variables.md|names local bind addresses \u2014 this repo is world-readable",
   "public-leak|tests/QA/060-environmental-variables.md|unchecked hardening item \u2014 publishes what is not yet defended \u2014 this repo is world-readable",
-  "public-leak|tests/QA/070-timezone-change.md|unchecked hardening item \u2014 publishes what is not yet defended \u2014 this repo is world-readable",
-  "secrets|-|gitleaks flagged findings: "
+  "public-leak|tests/QA/070-timezone-change.md|unchecked hardening item \u2014 publishes what is not yet defended \u2014 this repo is world-readable"
  ],
  "Databases": [
   "canon-drift|.github/profiles/_base.json|differs from canon/profiles/_base.json \u2014 --fix restores it",
@@ -101,8 +100,7 @@
   "fact-vs-reality|Legal/md/ley-21719-datos-personales.md|team_size: doc says 1, authority says 2",
   "personal-data|APIs/exports/INDEX.md|personal email apis-portal@superdesalud.gob.cl",
   "personal-data|APIs/exports/INDEX.md|personal email icd@who.int",
-  "personal-data|APIs/exports/INDEX.md|personal email registro.convenios@superdesalud.gob.cl",
-  "secrets|-|gitleaks flagged findings: "
+  "personal-data|APIs/exports/INDEX.md|personal email registro.convenios@superdesalud.gob.cl"
  ],
  "IntraVox": [
   "canon-drift|.github/profiles/_base.json|differs from canon/profiles/_base.json \u2014 --fix restores it",
@@ -164,8 +162,14 @@
   "readme-sections|README.md|no section covering 'licen' \u2014 Which licence covers this code, and where third-party notices live.",
   "readme-sections|README.md|no section covering 'quickstart' \u2014 Numbered steps, one action each, the exact copyable command. Every step says where it runs and what output proves it worked.",
   "readme-sections|README.md|no section covering 'status' \u2014 Where it stands today, dated. What is done, what is not. Never aspirational.",
-  "readme-sections|README.md|no section covering 'what' \u2014 What this is, and explicitly what it is not. Name the boundary a reader could get wrong.",
-  "secrets|-|gitleaks flagged findings: "
+  "readme-sections|README.md|no section covering 'what' \u2014 What this is, and explicitly what it is not. Name the boundary a reader could get wrong."
+ ],
+ "aps-common": [
+  "canon-drift|.github/profiles/_base.json|differs from canon/profiles/_base.json \u2014 --fix restores it",
+  "canon-drift|.github/profiles/aps-conecta.json|differs from canon/profiles/aps-conecta.json \u2014 --fix restores it",
+  "canon-drift|.github/repo-docs.py|differs from canon/repo-docs.py \u2014 --fix restores it",
+  "canon-drift|.github/workflows/docs.yml|differs from canon/workflows/docs.yml \u2014 --fix restores it",
+  "canon-stamp|.github/repo-docs.py|rendered from canon 7df6410c98d8; canon is now 73743401f5fc \u2014 --fix re-renders it"
  ],
  "aps-common": [
   "canon-drift|.github/profiles/_base.json|differs from canon/profiles/_base.json \u2014 --fix restores it",
