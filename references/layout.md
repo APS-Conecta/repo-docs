@@ -37,29 +37,14 @@ CHANGELOG.md
   workflows/docs.yml
   repo-docs.py
 .githooks/pre-commit
-docs/
-  index.md
 ```
 
-Level `full` keeps `docs/` flat: `index.md` directly under `docs/`, no Diátaxis directories.
-The directories are a navigation aid for corpora that have outgrown a table; a suite of small
-repositories ships a handful of documents each, and four bins with one file apiece is navigation
-cost with no navigation. `docs/index.md` does the work instead, in one standard shape — one table,
-one row per governed document:
-
-| Document | Mode | Reader | It is the authority for |
-|---|---|---|---|
-
-- **Mode** takes its values from the Diátaxis quadrants — `tutorial`, `how-to`, `reference`,
-  `explanation` — and may combine them (`reference + how-to`) when a page genuinely serves two.
-  Generated and data files are marked in the Mode cell: `reference (generated)`,
-  `reference (data)`.
-- **Reader** names the audience the page is written for, never its author.
-- **It is the authority for** names the facts the document owns — why a reader lands on it, and
-  why a competing page defers to it instead of restating them.
-
-`estadistica/docs/index.md` is the exemplar: the same four columns, one row per document, relative
-links.
+Level `full` ships no `docs/` subtree: navigation is the README's job, not a generated index.
+The README's **Documentación** section is the map — the `readme-sections` contract requires and
+orders it — and the governed documents are named from there. Each page carries its own mode in
+front matter (`tipo:`), values from the Diátaxis quadrants, so the mode discipline lives in the
+page instead of a four-column table maintained in parallel; `diataxis-verification` reads that
+typing. The rules own the teaching; this section only says where navigation lives.
 
 Level `ultra` adds `docs/adr/` with statuses, archetype reference stubs, and the Diátaxis split:
 

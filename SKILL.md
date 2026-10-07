@@ -103,7 +103,8 @@ What this engine enforces mechanically, so the rules are not only advice: `phant
 `unverified-command` (rule 4), `fact-contradiction` and `fact-vs-reality` (rule 5), `licence-prose`
 and `licence-declaration` (one licence, four declarations), `readme-sections` and
 `unfilled-contract` (the Section Contract), `adr-status` (MADR), `github-metadata` (a description is
-documentation too). Rules 1, 2, 3, 6 and 7 are judgment and are read, never checked.
+documentation too), `diataxis-verification` (a typed guide must tell the reader how to check it
+worked). Rules 1, 2, 3, 6 and 7 are judgment and are read, never checked.
 
 Dated history is exempt from the retirement rule; `gestion/CONTRIBUTING.md` names which four files
 that means, and `is_history()` matches exactly those.
@@ -117,7 +118,7 @@ dependency.
 | Level | Emits |
 |---|---|
 | **lite** | README + LICENSE + one working quickstart. Nothing else |
-| **full** | + CHANGELOG, `.github/` CONTRIBUTING · SECURITY · CODEOWNERS · PR + issue forms, `docs/index.md`, pre-commit hook, `docs.yml` gate |
+| **full** | + CHANGELOG, `.github/` CONTRIBUTING · SECURITY · CODEOWNERS · PR + issue forms, pre-commit hook, `docs.yml` gate |
 | **ultra** | + ADR set with statuses, archetype reference stubs, `docs/` Diátaxis split |
 | `--org` | public `.github` defaults only. No LICENSE — it cannot be defaulted. `profile/README.md` preserved |
 

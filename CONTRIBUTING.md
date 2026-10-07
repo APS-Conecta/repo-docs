@@ -1,32 +1,35 @@
-# Contributing — repo-docs
+# Contribuir — repo-docs
 
-This tool governs the organisation's documentation, so a change here changes every repository's
-gate. The organisation-wide contract in `APS-Conecta/.github` applies; what follows is what differs.
+Esta herramienta gobierna la documentación de la organización, así que un cambio aquí cambia la
+puerta de control de cada repositorio. Aplica el contrato de toda la organización en
+`APS-Conecta/.github`; lo que sigue es lo que difiere.
 
-## The one rule that matters
+## La única regla que importa
 
-**A rule that fires wrongly is a defect in this repository, not in the document it flagged.**
+**Una regla que dispara mal es un defecto de este repositorio, no del documento que marcó.**
 
-Hand-editing the document to silence a finding loses the lesson and leaves the rule broken for every
-other repository. Fix the rule or the table it reads, re-run `check --all`, and log one line in
-[`CHANGELOG.md`](CHANGELOG.md) naming the repository that taught it.
+Editar a mano el documento para silenciar un hallazgo pierde la lección y deja la regla rota para
+todos los demás repositorios. Corregir la regla o la tabla que lee, volver a correr `check --all` y
+registrar una línea en [`CHANGELOG.md`](CHANGELOG.md) nombrando el repositorio que la enseñó.
 
-Every entry in that changelog is a false positive this tool produced against real documentation.
-That list is the most useful thing here — keep adding to it.
+Cada entrada de ese registro es un falso positivo que esta herramienta produjo contra documentación
+real. Esa lista es lo más útil que hay aquí — seguir sumándole.
 
-## Craft or decision
+## Artesanía o decisión
 
-Before adding anything, decide which layer it belongs to ([ADR 0002](docs/adr/0002-craft-in-the-engine-decisions-in-a-profile.md)):
+Antes de agregar algo, decidir a qué capa pertenece
+([ADR 0002](docs/adr/0002-craft-in-the-engine-decisions-in-a-profile.md)):
 
-- **Craft** — true of documentation anywhere. A broken link is broken in any repository. Goes in
-  `scripts/docs.py` as a rule.
-- **Decision** — what this organisation chose. That our code is AGPL-3.0-or-later, that our docs are in
-  English. Goes in `profiles/aps-conecta.json` as data.
+- **Artesanía** — cierta de la documentación en cualquier parte. Un enlace roto está roto en
+  cualquier repositorio. Vive en `scripts/docs.py` como regla.
+- **Decisión** — lo que esta organización eligió. Que el código sea AGPL-3.0-or-later, que la
+  documentación lectora siga el idioma de su repositorio: inglés por omisión, español con el
+  marcador `.github/docs-es` (ADR 0006). Vive en `profiles/aps-conecta.json` como datos.
 
-A rule that hardcodes a decision is the mistake to avoid; it is how the licence rule earned its
-first three false positives.
+Una regla que codifica una decisión es el error a evitar; así ganó la regla de licencias sus
+primeros tres falsos positivos.
 
-## Adding a rule
+## Agregar una regla
 
 ```python
 @rule("my-rule", "warn", offline=True)
@@ -35,13 +38,14 @@ def _r_mine(ctx):
     yield Finding("my-rule", "warn", file, line, "what is wrong")
 ```
 
-`offline=False` marks a rule needing organisation-scoped auth; it is excluded from the CI gate,
-because CI's `GITHUB_TOKEN` cannot read organisation state. Add the rationale to `RATIONALE`.
+`offline=False` marca una regla que necesita autenticación con alcance de organización; queda
+excluida de la puerta de CI, porque el `GITHUB_TOKEN` de CI no puede leer estado de la
+organización. Agregar la justificación a `RATIONALE`.
 
-Severity is a claim about consequence, not confidence. `error` blocks a merge. If you cannot say
-what breaks, it is a `warn`.
+La severidad es una afirmación sobre la consecuencia, no sobre la confianza. Un `error` bloquea una
+fusión. Si no se puede decir qué se rompe, es un `warn`.
 
-## Before you push
+## Antes de empujar
 
 ```bash
 python3 scripts/docs.py selftest      # asserts the destructive paths are safe
@@ -49,18 +53,19 @@ python3 scripts/docs.py check --all   # no new findings you did not intend
 python3 scripts/docs.py check . --fix # this repo passes its own gate
 ```
 
-`selftest` must stay fast and dependency-free. It exists because `--fix` writes to real
-repositories: it was one release away from erasing a changelog, and the assertion that caught that
-class is why `LICENSE` and `CHANGELOG.md` are seeds rather than canon
+`selftest` debe seguir siendo rápido y sin dependencias. Existe porque `--fix` escribe en
+repositorios reales: estuvo a un release de borrar un registro de cambios, y la aserción que atrapó
+esa clase es la razón de que `LICENSE` y `CHANGELOG.md` sean semillas y no canon
 ([ADR 0001](docs/adr/0001-mechanical-and-judgment-are-separate-classes.md)).
 
-## Deleting rules
+## Borrar reglas
 
-A rule that has never fired across the organisation gets deleted, not kept in case. `DENYLIST` was
-measured at zero exclusions and removed. Coverage is not the goal; catching real defects is.
+Una regla que nunca ha disparado en la organización se borra, no se guarda por si acaso. `DENYLIST`
+se midió en cero exclusiones y se eliminó. La cobertura no es el objetivo; atrapar defectos reales
+lo es.
 
-## Vocabulary
+## Vocabulario
 
-[`CONTEXT.md`](CONTEXT.md) is the glossary and is load-bearing — *canon* and *seed* look identical
-at creation and differ entirely afterwards, and confusing them destroys content. Read it before
-naming anything new.
+[`CONTEXT.md`](CONTEXT.md) es el glosario y su vocabulario es estructural (load-bearing): *canon* y
+*seed* se ven idénticos al crearse y difieren por completo después, y confundirlos destruye
+contenido. Leerlo antes de nombrar cualquier cosa nueva.

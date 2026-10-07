@@ -29,6 +29,34 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **The Spanish opt-in: `docs_es` and the `.github/docs-es` marker (ADR-0006).** Opting in is
+  one empty file, probed by `scan()` beside `has_ci` — a fact, consulted by the gated rules and
+  nothing else. A repo that carries it loses the legacy aggregate `doc-language` warn (the
+  per-file rule owns language from there) and its README answers the five-section Spanish
+  contract; every repo that does not carries this whole round dormant — each gated rule reads the
+  fact as its first line and returns, so non-opted repositories stay byte-identical through the
+  change. repo-docs itself opts in: README, CONTRIBUTING and SECURITY are rewritten in the ADR's
+  neutral register (third person or impersonal, infinitive steps, affirmative verified facts),
+  `docs/index.md` is deleted (see Changed), and `docs/adr/0006-documentacion-en-espanol.md`
+  records the decision.
+- **Four rules for the Spanish surface: `doc-language-es` (error), the `readme-sections` Spanish
+  contract (error findings under the unchanged `warn` registration — severity is per-Finding, and
+  the exit count reads the Finding), `retired-paths` (error), `diataxis-verification` (warn,
+  ungated).** `doc-language-es` holds the files `must_be_spanish` names org-wide — README,
+  CONTRIBUTING, SECURITY, CODE_OF_CONDUCT — to Spanish body prose: fenced blocks and inline code
+  blanked before tokenising, a 20-token floor at 5% density over the twelve closed stopwords, so
+  a code-heavy Spanish page reads clean and a half-English one does not slip past;
+  `must_be_spanish_documentation` adds `aviso.md` and four directory prefixes in the
+  `documentation` repository alone, matched exact-or-prefix, never by suffix. The `readme-sections`
+  contract holds opted-in READMEs to five ordered H2s — Qué es, Documentación, Estado, Inicio
+  rápido de desarrollo, Licencia — with the Licencia section required to link the published
+  aviso, checked offline against the link text; the `repo_readmes` fork keeps AIO's and
+  IntraVox's `.github/README.md` under the same contract. `retired-paths` probes the working
+  tree — an existence probe, not a tracked-Markdown walk — for the eighteen paths ADR-0006
+  retired (`BUGS.md`, `docs/index.md`, the manuals subtree), so a committed stylesheet and an
+  untracked leftover are equally defects. `diataxis-verification` requires a page whose front
+  matter declares `tipo: guia` to carry a `Verificación` heading: three stdlib regexes over the
+  leading block and the body, no yaml dependency, English repos included.
 - **The mode table.** `docs/index.md` is rebuilt as the Document × Mode × Reader × Authority table —
   one row per governed document, `adr/0005-one-published-surface.md` included for the first time —
   and `references/layout.md` records the standard and the flat-`docs/` decision behind it: no
@@ -43,6 +71,28 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **`docs/index.md` retires from `levels.full` and `levels.ultra`; `notices_doc` is
+  `THIRD-PARTY-NOTICES.md` alone.** ADR-0006 puts navigation in the README's Documentación
+  section — the flat index was a second navigation surface, and the four
+  `missing-required` fingerprints it kept open (`absent: docs/index.md` in AIO, agents,
+  pi-sandbox, rpiv-artifacts) become unproducible and resolve in the re-record below.
+  `references/layout.md` now teaches the README-first tree and keeps the ultra block's Diátaxis
+  definition with its YAGNI note. gestion keeps its `LICENSING.md` allowed by name but it is no
+  longer the engine's notices document: the transitional `licence-inventory` warn the flip opens
+  is accepted until the R4 rewrite (`_comment_notices_doc` records the decision, with the
+  ADR-0006 pointer).
+- **The baseline re-records the R1a suite: +33 new, −4 resolved, 12 keys, nothing stale.** The
+  expected canon movement, not drift: the eight canonized repositories take four each — three
+  `canon-drift` (the engine and both profiles differ from canon) and one `canon-stamp` (each
+  vendored copy states the canon it was rendered from, and this round moved it) — gestion takes
+  those four plus the accepted licence-inventory warn, and the four repositories that never
+  vendored the checker keep their ten `missing; canon/… defines it` fingerprints byte-identical
+  while losing exactly their `docs/index.md` absence. The re-render and the re-record ship in
+  this same PR — an engine edit without a same-PR refresh turns the weekly sweep red between
+  them — and the per-repo drift resolves itself as rollout PRs re-render each vendored copy.
+  Recorded with full auth (`--save-baseline` refuses degraded runs); gestion's two sweep-PAT
+  `claim-boxes` fingerprints — `could not read the setting`, the dependabot probes the sweep's
+  token cannot make — are carried by hand, the way `common`'s were once removed by hand.
 - **`doc_language_exempt` corrected to ten entries.** `GLOSARIO.md` is dropped — no such file
   exists anywhere in the suite — and the Spanish that actually ships is named instead:
   `docs/GUIA-CLINICA.md`, `docs/manual.md`, `Legal/OBLIGACIONES.md` and the six statute files, all

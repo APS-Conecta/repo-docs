@@ -1,52 +1,55 @@
-# Security policy — repo-docs
+# Política de seguridad — repo-docs
 
-## Scope
+## Alcance
 
-A documentation tool for this organisation's own repositories. It holds no patient or clinical data
-and processes no runtime input: it reads Markdown and repository metadata from disk and from the
-GitHub API.
+Una herramienta de documentación para los repositorios propios de esta organización. No guarda
+datos de pacientes ni datos clínicos, y no procesa entrada en tiempo de ejecución: lee Markdown y
+metadatos de repositorios, desde disco y desde la API de GitHub.
 
-The repository is private. This policy exists because the tool holds more authority than a
-documentation tool usually does.
+El repositorio es privado. Esta política existe porque la herramienta tiene más autoridad de la que
+una herramienta de documentación suele tener.
 
-## What this tool can do
+## Qué puede hacer esta herramienta
 
-It runs with the operator's own `gh` credentials, which carry `repo` and `admin:org`. Under
-`--apply-settings` it changes organisation and repository settings, not only documentation
-([ADR 0003](docs/adr/0003-the-tool-changes-github-settings.md)).
+Corre con las credenciales `gh` de quien la opera, que llevan `repo` y `admin:org`. Bajo
+`--apply-settings` cambia configuraciones de la organización y de repositorios, no únicamente
+documentación ([ADR 0003](docs/adr/0003-the-tool-changes-github-settings.md)).
 
-That is a deliberate expansion of blast radius, and it is fenced:
+Esa ampliación del radio de explosión es deliberada, y está cercada:
 
-- Settings change **only** under an explicit `--apply-settings`. `--fix` never touches them.
-- `org-2fa` refuses while any member lacks 2FA, because enforcing it removes those members — and
-  this organisation has one member, who is also its owner.
-- `--fix` writes only the mechanical class. It never rewrites prose, and never restores a seed
-  (`LICENSE`, `CHANGELOG.md`), because restoring one destroys accumulated content.
-- `pr` opens draft pull requests only, commits documentation paths only, and refuses on a working
-  tree containing anything else. It never merges, force-pushes, or touches the default branch.
+- Las configuraciones cambian **únicamente** bajo un `--apply-settings` explícito. `--fix` nunca
+  las toca.
+- `org-2fa` se niega mientras algún miembro carezca de 2FA, porque aplicar la política remueve a
+  esos miembros — y esta organización tiene un miembro, que es además su dueño.
+- `--fix` escribe únicamente la clase mecánica. Nunca reescribe prosa y nunca restaura una semilla
+  (`LICENSE`, `CHANGELOG.md`), porque restaurar una destruye contenido acumulado.
+- `pr` abre pull requests en borrador únicamente, commitea únicamente rutas de documentación y se
+  niega con un árbol de trabajo que contenga cualquier otra cosa. Nunca fusiona, nunca hace
+  force-push y nunca toca la rama por defecto.
 
-`selftest` asserts these paths. Treat a change that weakens one of them as a security change, not a
-refactor.
+`selftest` aserta estos caminos. Tratar un cambio que debilite uno de ellos como un cambio de
+seguridad, no como una refactorización.
 
-## Handling of credentials
+## Manejo de credenciales
 
-The tool stores no credentials. It shells out to `gh`, which uses the operator's existing login.
-It never writes tokens to disk and never echoes API responses containing them.
+La herramienta no guarda credenciales. Invoca `gh`, que usa la sesión existente de quien la opera.
+Nunca escribe tokens a disco y nunca imprime respuestas de la API que los contengan.
 
-`config.json` holds a filesystem path and is gitignored. Nothing else is machine-local.
+`config.json` guarda una ruta del sistema de archivos y está en `.gitignore`. Nada más es local a la
+máquina.
 
-## Reporting a vulnerability
+## Reportar una vulnerabilidad
 
-Do not open a public issue. Use GitHub's private reporting on this repository, or contact the
-maintainer through the [organisation profile](https://github.com/APS-Conecta).
+No abrir un issue público. Usar el reporte privado de GitHub en este repositorio, o contactar al
+mantenedor a través del [perfil de la organización](https://github.com/APS-Conecta).
 
-Reports about the guard rails above are the ones worth sending — particularly any path that lets
-`--fix` or `pr` write outside the documentation surface, or that gets a setting applied without the
-explicit flag.
+Los reportes sobre las barreras de arriba son los que vale la pena enviar — en particular,
+cualquier camino que deje a `--fix` o a `pr` escribir fuera de la superficie de documentación, o
+que logre aplicar una configuración sin el flag explícito.
 
-## Out of scope
+## Fuera de alcance
 
-- The tool trusts the repositories it is pointed at. It is not a sandbox and does not defend against
-  hostile Markdown; every repository it reads is one we wrote.
-- `gitleaks`, when installed, is invoked as an external scanner. Its findings and its false
-  negatives are its own.
+- La herramienta confía en los repositorios a los que se le apunta. No es una sandbox y no se
+  defiende de Markdown hostil; cada repositorio que lee fue escrito dentro de la organización.
+- `gitleaks`, cuando está instalado, se invoca como escáner externo. Sus hallazgos y sus falsos
+  negativos son suyos.
