@@ -52,7 +52,7 @@ PROFILES = _resource("profiles")
 # Deliberately not a `string.Template` placeholder: this whole file is rendered, so a placeholder
 # here would also be substituted inside the comparison below that reads it. Every dollar-sigil token
 # in this file is substituted on the way out, which is why none of the prose in it writes one.
-CANON_STAMP = "ceaf3e121fd2"
+CANON_STAMP = "73743401f5fc"
 
 # ---- craft vs decision (ADR 0002) --------------------------------------------------
 # Every rule below is craft: true of documentation anywhere. Every rule's PARAMETERS are
@@ -1201,11 +1201,22 @@ def _r_canon_stamp(ctx):
                   f"— --fix re-renders it")
 
 
+def gitleaks_argv(path: Path) -> list:
+    """The gitleaks invocation: the PR commit range when the docs workflow exports one,
+    the full source otherwise (local runs, the central sweep). `detect` works on every
+    v8.x — the newer `git` subcommand only exists since v8.19.0, and which gitleaks a
+    local machine has installed is none of this repo's business."""
+    argv = ["gitleaks", "detect", "--no-banner", "--redact"]
+    rng = os.environ.get("REPO_DOCS_PR_RANGE", "").strip()
+    if rng:
+        return argv + ["--log-opts", rng, "--source", str(path)]
+    return argv + ["--source", str(path)]
+
+
 @rule("secrets", "error")
 def _r_secrets(ctx):
     if shutil.which("gitleaks"):
-        code, out, _ = sh(["gitleaks", "detect", "--no-banner", "--redact",
-                           "--source", str(ctx["path"])])
+        code, out, _ = sh(gitleaks_argv(ctx["path"]))
         if code != 0:
             yield Finding("secrets", "error", None, None,
                           f"gitleaks flagged findings: {out.splitlines()[-1][:80] if out else ''}")
@@ -1872,6 +1883,74 @@ def open_pr(repo: Path, paths: list, level: str) -> str:
     return out if code == 0 else f"branch pushed, PR not created: {err[:200]}"
 
 
+# ---------------------------------------------------------------- pr gate
+
+# Craft, not decision: what a `Docs:` trailer looks like, and which characters English
+# never uses. WHICH paths trigger the trailer and WHO is exempt are decisions — they
+# live in profiles/<owner>.json (docs_line_paths, pr_exempt_logins). The trailer is a
+# LINE, case-sensitive as the convention writes it: "Docs:" inside a sentence is a
+# mention, not a trailer.
+DOCS_LINE = re.compile(r"^Docs:[ \t]*(APS-Conecta/documentation#[0-9]+|sin cambios)[ \t]*$",
+                       re.M)
+ACCENTED = re.compile(r"[áéíóúñü¿¡]")
+
+
+def docs_line_ok(body: str) -> bool:
+    return bool(DOCS_LINE.search(body or ""))
+
+
+def title_is_english(title: str) -> bool:
+    """Accents never occur in English. Otherwise _r_gh_meta's short-text rule: a title
+    of six words or fewer needs one stopword to read Spanish, a longer one two — over
+    the same closed es_stopwords set, which holds no English function word."""
+    if ACCENTED.search(title):
+        return False
+    words = re.findall(r"[a-záéíóúñ]+", title.lower())
+    hits = sum(w in set(P["es_stopwords"]) for w in words)
+    return not (hits >= 2 or (hits >= 1 and len(words) <= 6))
+
+
+def pr_gate(title: str, body: str, login: str, files: list) -> list:
+    """The pull_request half of the documentation gate: a PR changing a watched path
+    carries a `Docs:` trailer naming where the user-facing change is documented (the
+    docs-es initiative), and every PR title is English — the squash commit message IS
+    the title, and commit messages stay English by ADR-0006. Bot logins are exempt
+    from the trailer only: mechanical PRs have no documentation to name, but their
+    titles are as English as anyone's."""
+    out = []
+    watched = tuple(P.get("docs_line_paths") or ())
+    if watched and login not in (P.get("pr_exempt_logins") or ()):
+        if any(f.startswith(watched) for f in files) and not docs_line_ok(body):
+            out.append("Docs: line missing — PRs touching code must carry "
+                       "'Docs: APS-Conecta/documentation#<n>' or 'Docs: sin cambios' "
+                       "in the body")
+    if not title_is_english(title):
+        out.append(f"PR title is not English: {title[:70]!r}")
+    return out
+
+
+def pr_gate_cmd() -> int:
+    """Workflow entrypoint. The event payload supplies title, body, author and the base
+    SHA; the changed files come from a merge-base diff over the same base the secrets
+    range scans, so the trailer rule and the range can never disagree about what changed."""
+    path = os.environ.get("GITHUB_EVENT_PATH")
+    if not path or not Path(path).exists():
+        sys.exit("repo-docs: pr-gate reads the Actions event payload ($GITHUB_EVENT_PATH) — "
+                 "it runs in the docs workflow, on pull_request")
+    ev = json.loads(Path(path).read_text())
+    pr = ev.get("pull_request") or {}
+    base = (pr.get("base") or {}).get("sha") or ""
+    if not base:
+        sys.exit("repo-docs: pr-gate needs a pull_request payload (no base SHA)")
+    _, files, _ = sh(["git", "diff", "--name-only", f"{base}...HEAD"])
+    found = pr_gate(pr.get("title") or "", pr.get("body") or "",
+                    ((pr.get("user") or {}).get("login") or ""),
+                    [f for f in files.split("\n") if f])
+    for f in found:
+        print(f"ERROR    pr-gate              {f}")
+    return 1 if found else 0
+
+
 def selftest() -> None:
     global ROOT, gh, CANON_DIR
 
@@ -1912,6 +1991,62 @@ def selftest() -> None:
         assert _guard_2fa() == [], "empty member list must not block"
     finally:
         gh = _real_gh
+
+    # The pr-gate functions, every direction — pure calls, no fixture repo. The CLI
+    # wrapper is a thin reader over $GITHUB_EVENT_PATH; these asserts pin the logic it
+    # prints. 'y' in "x and y axes" is the one-stopword English case the ≤6-word
+    # threshold exists to spare.
+    assert docs_line_ok("Fix thing\n\nDocs: APS-Conecta/documentation#12\n")
+    assert docs_line_ok("Docs: sin cambios")
+    assert not docs_line_ok("mentions Docs: sin cambios mid-sentence")
+    assert not docs_line_ok("docs: sin cambios")            # case-sensitive, as written
+    assert title_is_english("Add usage manual for the scheduler")
+    assert title_is_english("Fix x and y axes in the map legend")
+    assert not title_is_english("Añade manual de uso")      # accents decide outright
+    assert not title_is_english("Manual de uso")            # 1 stopword, 3 words
+    assert pr_gate("Add thing", "", "ddespinoza", ["src/lib/X.php", "README.md"]) == \
+        ["Docs: line missing — PRs touching code must carry "
+         "'Docs: APS-Conecta/documentation#<n>' or 'Docs: sin cambios' in the body"]
+    assert pr_gate("Add thing", "Docs: APS-Conecta/documentation#7", "ddespinoza",
+                   ["lib/Command/Run.php"]) == []
+    assert pr_gate("Add thing", "Docs: sin cambios", "ddespinoza", ["appinfo/info.xml"]) == []
+    assert pr_gate("Add thing", "", "ddespinoza", ["docs/guias/x.md"]) == []   # unwatched
+    assert pr_gate("Add thing", "", "dependabot[bot]", ["src/X.php"]) == []    # exempt
+    assert pr_gate("Add thing", "", "claude[bot]", ["src/X.php"]) == []        # exempt list
+    assert pr_gate("Manual de uso para el personal", "", "ddespinoza",
+                   ["docs/x.md"]) == ["PR title is not English: "
+                                      "'Manual de uso para el personal'"]
+    assert len(pr_gate("Manual de uso", "", "ddespinoza", ["src/X.php"])) == 2
+    assert "PR title is not English" in \
+        pr_gate("Añade cosa", "", "dependabot[bot]", [])[0]  # exempt from the trailer only
+
+    # The gitleaks invocation honours the PR range the docs workflow exports; without
+    # it the argv is byte-identical to the pre-R1b call (the sweep and local runs).
+    _old_rng = os.environ.pop("REPO_DOCS_PR_RANGE", None)
+    try:
+        assert gitleaks_argv(SKILL) == ["gitleaks", "detect", "--no-banner", "--redact",
+                                        "--source", str(SKILL)], gitleaks_argv(SKILL)
+        os.environ["REPO_DOCS_PR_RANGE"] = "abc123..def456"
+        assert gitleaks_argv(SKILL) == ["gitleaks", "detect", "--no-banner", "--redact",
+                                        "--log-opts", "abc123..def456",
+                                        "--source", str(SKILL)], gitleaks_argv(SKILL)
+    finally:
+        os.environ.pop("REPO_DOCS_PR_RANGE", None)
+        if _old_rng is not None:
+            os.environ["REPO_DOCS_PR_RANGE"] = _old_rng
+
+    # The canon workflow must render with its GitHub expressions intact: Template
+    # leaves unknown placeholders alone, so the `${{ }}` forms survive while the
+    # canon placeholders substitute. A literal placeholder name here would be
+    # substituted inside the very whole-file invariant that guards this file, so the
+    # one the assert names is assembled at runtime.
+    _wf = render("workflows/docs.yml", {"branch": "main", "org": "EXAMPLE",
+                                        "holder": "h", "year": "9", "canon_stamp": "",
+                                        "repo": "r", "code_owners": ""})
+    D = "$"
+    assert D + "{{ github.event_name == 'pull_request'" in _wf, "the GHA expression must survive render"
+    assert (D + "branch") not in _wf and (D + "org") not in _wf, "the canon placeholders must not"
+    assert "branches: [main]" in _wf and "REPO_DOCS_ORG: EXAMPLE" in _wf
 
     with tempfile.TemporaryDirectory() as td:
         base = Path(td) / "with space"
@@ -2339,6 +2474,7 @@ def main(argv=None):
     pr = add("pr")
     pr.add_argument("repo")
     pr.add_argument("--level", default="full", choices=sorted(P["levels"]))
+    add("pr-gate")
     add("selftest")
     a = p.parse_args(argv)
 
@@ -2407,6 +2543,8 @@ def main(argv=None):
                       or p.startswith((".github/", ".githooks/", "docs/"))]
         print(open_pr(repo, docs_paths, a.level))
         return 0
+    if a.cmd == "pr-gate":
+        return pr_gate_cmd()
     if a.cmd == "check":
         if a.offline and a.save_baseline:
             # CI runs --offline and evaluates a subset. Recording that subset would retire every
