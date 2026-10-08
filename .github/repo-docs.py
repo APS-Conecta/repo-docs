@@ -52,7 +52,7 @@ PROFILES = _resource("profiles")
 # Deliberately not a `string.Template` placeholder: this whole file is rendered, so a placeholder
 # here would also be substituted inside the comparison below that reads it. Every dollar-sigil token
 # in this file is substituted on the way out, which is why none of the prose in it writes one.
-CANON_STAMP = "ceaf3e121fd2"
+CANON_STAMP = "12220a8479a3"
 
 # ---- craft vs decision (ADR 0002) --------------------------------------------------
 # Every rule below is craft: true of documentation anywhere. Every rule's PARAMETERS are

@@ -58,6 +58,22 @@
     "docs/CONTRACTS.md",
     "docs/MIGRATION.md"
   ],
+  "_comment_docs_line": "docs-es Mechanisms (canon docs.yml pr-gate): a PR touching any docs_line_paths prefix carries 'Docs: APS-Conecta/documentation#<n>' or 'Docs: sin cambios' in its body; pr_exempt_logins are bots with no documentation to name, exempt from the trailer only (never from the English-title rule). Empty means the rule is off — docs.py's selftest pins these values.",
+  "docs_line_paths": [
+    "l10n/",
+    "src/",
+    "templates/",
+    "appinfo/",
+    "lib/Command/",
+    "lib/Settings/"
+  ],
+  "pr_exempt_logins": [
+    "dependabot[bot]",
+    "aps-conecta-bot[bot]",
+    "aps-pi[bot]",
+    "google-labs-jules[bot]",
+    "claude[bot]"
+  ],
   "stack_markers": {
     "appinfo/info.xml": "nextcloud-app",
     "functions.php": "wordpress-theme"
