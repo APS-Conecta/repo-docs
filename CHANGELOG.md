@@ -10,6 +10,19 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **The R1b merge dropped five files; `main` went red (#8, #9, this entry).** Merging `main`
+  into `feat/docs-es-r1b` (9345370) resolved its conflicts toward `main` and silently dropped
+  R1b's `profiles/aps-conecta.json` keys, its re-rendered vendored copies, these CHANGELOG
+  entries and its baseline re-record. Without `docs_line_paths` / `pr_exempt_logins`, `pr_gate()`
+  watched nothing: the Docs-line rule passed every PR without checking it, and only the selftest
+  caught it. #8 restores the keys (the same values R1b wrote) and re-renders the vendored copies.
+  This entry restores the R1b CHANGELOG text below verbatim. The baseline is left to docs-es R2b,
+  which re-records it when the census moves to the catalog.
+- **`phantom-command` reads `composer run X` as the script `X` (#9).** The bare `composer`
+  branch matched first, so "composer run test:unit" became the command `composer run` — a
+  false ERROR on IntraVox `AGENTS.md:34`. `composer run` now precedes `composer` in
+  `DOC_COMMAND`, and `available_commands()` offers both spellings of every composer script.
+
 - **The census clone root.** The weekly sweep cloned the census into the repo-docs
   checkout (cwd-relative paths in `census.py run`), so `check --all` walked repo-docs
   holding the whole org nested inside it and went red on NEW findings a stale baseline
@@ -29,6 +42,33 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **actionlint guards the workflows.** The selftest job installs a pinned, checksum-verified
+  actionlint 1.7.12 and lints `canon/workflows/*.yml` and `.github/workflows/*.yml` — the
+  canon sources with their placeholders in place, so what parses is what renders. No pipeline
+  check parsed workflow YAML before GitHub's runner did, and the R1b canon `docs.yml` shipped
+  an unquoted `PR gate (Docs: line, English title)` step name — a colon-space in a plain
+  scalar, a parse error only the runner caught, at startup, on the gate's own first live run.
+  The selftest trigger widens to `.github/workflows/**` so every workflow change lints.
+
+- **The PR gate: `pr-gate` and the unfiltered `docs` job.** Canon `workflows/docs.yml`
+  loses its paths filter, gains `edited` among its pull_request types (editing the body
+  to add the trailer re-runs the gate), runs as job id and name `docs` — the required
+  check R5's ruleset will name — and installs a pinned, checksum-verified gitleaks
+  8.30.1 over a full-depth checkout. Two checks run on pull_request only: a PR touching
+  `l10n/`, `src/`, `templates/`, `appinfo/`, `lib/Command/` or `lib/Settings/` must carry
+  a `Docs: APS-Conecta/documentation#<n>` or `Docs: sin cambios` line (the five
+  automation logins are exempt from the trailer, never from the English-title rule),
+  and every PR title must be English — the squash commit message is the title. The
+  watched paths and exemptions live in the profile (`docs_line_paths`,
+  `pr_exempt_logins`); the craft lives in the engine, where `pr-gate` reads the Actions
+  event payload and derives its changed-file list from a merge-base diff over the same
+  range scan uses.
+- **`secrets` scans the PR commit range in CI.** The workflow exports
+  `REPO_DOCS_PR_RANGE` (the PR's own commits; pushes scan just the pushed commits;
+  empty only on a branch's first push) and `gitleaks_argv` turns it into
+  `--log-opts` — a secret introduced by the PR fails the gate while history before the
+  base never produces findings. Local runs and the weekly sweep, which never install
+  gitleaks, keep the fallback regex path and a byte-identical invocation shape.
 - **The Spanish opt-in: `docs_es` and the `.github/docs-es` marker (ADR-0006).** Opting in is
   one empty file, probed by `scan()` beside `has_ci` — a fact, consulted by the gated rules and
   nothing else. A repo that carries it loses the legacy aggregate `doc-language` warn (the
@@ -71,6 +111,16 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **The baseline re-records the R1b canon movement: +16 new, −11 resolved, 12 keys.**
+  Each canonized repository takes the workflow's canon-drift and a moved canon-stamp —
+  the stamp message embeds both digests, so every canon byte that moves retires the old
+  fingerprint — while their engine and profile drift fingerprints carry today's static
+  messages and stay open until each R4 rollout re-renders its vendored set. The refresh
+  also ran gitleaks-less for the first time (`PATH=/usr/bin:/bin`), so the three
+  recorded `gitleaks flagged findings` fingerprints — written by a gitleaks-bearing
+  machine, never reproducible on the sweep's runner — resolve permanently: the
+  baseline now matches the ruleset the weekly sweep actually replays. gestion's two
+  sweep-PAT claim-boxes fingerprints are carried by hand as before.
 - **`docs/index.md` retires from `levels.full` and `levels.ultra`; `notices_doc` is
   `THIRD-PARTY-NOTICES.md` alone.** ADR-0006 puts navigation in the README's Documentación
   section — the flat index was a second navigation surface, and the four
