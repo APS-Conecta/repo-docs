@@ -830,7 +830,9 @@ def _f_vis(ctx):
     return authority, _claims(ctx["path"], ctx["files"], pat, lambda m: m.group(1).lower())
 
 
-DOC_COMMAND = re.compile(r"\b(make|npm run|yarn|composer)\s+([a-zA-Z][\w:-]*)")
+# `composer run X` before bare `composer`: alternation takes the first branch that matches, and
+# bare `composer` read "composer run test:unit" as the command `composer run` (IntraVox AGENTS.md).
+DOC_COMMAND = re.compile(r"\b(make|npm run|yarn|composer run|composer)\s+([a-zA-Z][\w:-]*)")
 
 
 def available_commands(repo: Path) -> set:
@@ -851,6 +853,8 @@ def available_commands(repo: Path) -> set:
         have |= {f"{prefix} {k}" for k in scripts}
         if prefix == "npm run":
             have |= {f"yarn {k}" for k in scripts}
+        else:
+            have |= {f"composer run {k}" for k in scripts}
     return have
 
 
@@ -2019,6 +2023,16 @@ def selftest() -> None:
     assert len(pr_gate("Manual de uso", "", "ddespinoza", ["src/X.php"])) == 2
     assert "PR title is not English" in \
         pr_gate("Añade cosa", "", "dependabot[bot]", [])[0]  # exempt from the trailer only
+
+    # `composer run X` is the same script as `composer X`; both spellings resolve, and an
+    # unknown script is still a phantom under either.
+    m = DOC_COMMAND.search("run `composer run test:unit` first")
+    assert (m.group(1), m.group(2)) == ("composer run", "test:unit")
+    with tempfile.TemporaryDirectory() as td:
+        Path(td, "composer.json").write_text('{"scripts": {"test:unit": "phpunit"}}')
+        have = available_commands(Path(td))
+        assert {"composer test:unit", "composer run test:unit"} <= have
+        assert "composer run lint:nope" not in have
 
     # The gitleaks invocation honours the PR range the docs workflow exports; without
     # it the argv is byte-identical to the pre-R1b call (the sweep and local runs).
