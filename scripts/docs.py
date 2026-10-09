@@ -1889,18 +1889,11 @@ def open_pr(repo: Path, paths: list, level: str) -> str:
 
 # ---------------------------------------------------------------- pr gate
 
-# Craft, not decision: what a `Docs:` trailer looks like, and which characters English
-# never uses. WHICH paths trigger the trailer and WHO is exempt are decisions — they
-# live in profiles/<owner>.json (docs_line_paths, pr_exempt_logins). The trailer is a
-# LINE, case-sensitive as the convention writes it: "Docs:" inside a sentence is a
-# mention, not a trailer.
-DOCS_LINE = re.compile(r"^Docs:[ \t]*(APS-Conecta/documentation#[0-9]+|sin cambios)[ \t]*$",
-                       re.M)
+# Craft, not decision: which characters English never uses. The `Docs:` trailer this
+# gate once required is gone (scribe initiative, 2026-10-09): the Scribe routine reads
+# every merged PR and writes the documentation itself, so a self-declared line that
+# nothing verified only added friction.
 ACCENTED = re.compile(r"[áéíóúñü¿¡]")
-
-
-def docs_line_ok(body: str) -> bool:
-    return bool(DOCS_LINE.search(body or ""))
 
 
 def title_is_english(title: str) -> bool:
@@ -1915,19 +1908,11 @@ def title_is_english(title: str) -> bool:
 
 
 def pr_gate(title: str, body: str, login: str, files: list) -> list:
-    """The pull_request half of the documentation gate: a PR changing a watched path
-    carries a `Docs:` trailer naming where the user-facing change is documented (the
-    docs-es initiative), and every PR title is English — the squash commit message IS
-    the title, and commit messages stay English by ADR-0006. Bot logins are exempt
-    from the trailer only: mechanical PRs have no documentation to name, but their
-    titles are as English as anyone's."""
+    """The pull_request half of the documentation gate: every PR title is English — the
+    squash commit message IS the title, and commit messages stay English by ADR-0006.
+    Bots included. `body`, `login` and `files` stay in the signature so the workflow
+    entrypoint keeps one shape if a body or path rule ever returns."""
     out = []
-    watched = tuple(P.get("docs_line_paths") or ())
-    if watched and login not in (P.get("pr_exempt_logins") or ()):
-        if any(f.startswith(watched) for f in files) and not docs_line_ok(body):
-            out.append("Docs: line missing — PRs touching code must carry "
-                       "'Docs: APS-Conecta/documentation#<n>' or 'Docs: sin cambios' "
-                       "in the body")
     if not title_is_english(title):
         out.append(f"PR title is not English: {title[:70]!r}")
     return out
@@ -1936,7 +1921,7 @@ def pr_gate(title: str, body: str, login: str, files: list) -> list:
 def pr_gate_cmd() -> int:
     """Workflow entrypoint. The event payload supplies title, body, author and the base
     SHA; the changed files come from a merge-base diff over the same base the secrets
-    range scans, so the trailer rule and the range can never disagree about what changed."""
+    range scans, so a path rule and the range could never disagree about what changed."""
     path = os.environ.get("GITHUB_EVENT_PATH")
     if not path or not Path(path).exists():
         sys.exit("repo-docs: pr-gate reads the Actions event payload ($GITHUB_EVENT_PATH) — "
@@ -1999,30 +1984,25 @@ def selftest() -> None:
     # The pr-gate functions, every direction — pure calls, no fixture repo. The CLI
     # wrapper is a thin reader over $GITHUB_EVENT_PATH; these asserts pin the logic it
     # prints. 'y' in "x and y axes" is the one-stopword English case the ≤6-word
-    # threshold exists to spare.
-    assert docs_line_ok("Fix thing\n\nDocs: APS-Conecta/documentation#12\n")
-    assert docs_line_ok("Docs: sin cambios")
-    assert not docs_line_ok("mentions Docs: sin cambios mid-sentence")
-    assert not docs_line_ok("docs: sin cambios")            # case-sensitive, as written
+    # threshold exists to spare. The gate checks the title only: the `Docs:` trailer was
+    # dropped by the scribe initiative (the Scribe routine reads every merge), so a PR
+    # touching code with no trailer passes, from any login.
     assert title_is_english("Add usage manual for the scheduler")
     assert title_is_english("Fix x and y axes in the map legend")
     assert not title_is_english("Añade manual de uso")      # accents decide outright
     assert not title_is_english("Manual de uso")            # 1 stopword, 3 words
-    assert pr_gate("Add thing", "", "ddespinoza", ["src/lib/X.php", "README.md"]) == \
-        ["Docs: line missing — PRs touching code must carry "
-         "'Docs: APS-Conecta/documentation#<n>' or 'Docs: sin cambios' in the body"]
-    assert pr_gate("Add thing", "Docs: APS-Conecta/documentation#7", "ddespinoza",
-                   ["lib/Command/Run.php"]) == []
-    assert pr_gate("Add thing", "Docs: sin cambios", "ddespinoza", ["appinfo/info.xml"]) == []
-    assert pr_gate("Add thing", "", "ddespinoza", ["docs/guias/x.md"]) == []   # unwatched
-    assert pr_gate("Add thing", "", "dependabot[bot]", ["src/X.php"]) == []    # exempt
-    assert pr_gate("Add thing", "", "claude[bot]", ["src/X.php"]) == []        # exempt list
+    assert pr_gate("Add thing", "", "ddespinoza", ["src/lib/X.php", "README.md"]) == []
+    assert pr_gate("Add thing", "", "ddespinoza", ["appinfo/info.xml", "l10n/es.json"]) == []
+    assert pr_gate("Add thing", "", "dependabot[bot]", ["src/X.php"]) == []
     assert pr_gate("Manual de uso para el personal", "", "ddespinoza",
                    ["docs/x.md"]) == ["PR title is not English: "
                                       "'Manual de uso para el personal'"]
-    assert len(pr_gate("Manual de uso", "", "ddespinoza", ["src/X.php"])) == 2
+    assert pr_gate("Manual de uso", "", "ddespinoza", ["src/X.php"]) == \
+        ["PR title is not English: 'Manual de uso'"]
     assert "PR title is not English" in \
-        pr_gate("Añade cosa", "", "dependabot[bot]", [])[0]  # exempt from the trailer only
+        pr_gate("Añade cosa", "", "dependabot[bot]", [])[0]  # bots write English titles too
+    assert "docs_line_paths" not in P and "pr_exempt_logins" not in P, \
+        "the Docs: trailer keys have no reader left — delete them from the profile"
 
     # `composer run X` is the same script as `composer X`; both spellings resolve, and an
     # unknown script is still a phantom under either.
