@@ -52,7 +52,7 @@ PROFILES = _resource("profiles")
 # Deliberately not a `string.Template` placeholder: this whole file is rendered, so a placeholder
 # here would also be substituted inside the comparison below that reads it. Every dollar-sigil token
 # in this file is substituted on the way out, which is why none of the prose in it writes one.
-CANON_STAMP = "bbab03ea4007"
+CANON_STAMP = "5d98019d78b9"
 
 # ---- craft vs decision (ADR 0002) --------------------------------------------------
 # Every rule below is craft: true of documentation anywhere. Every rule's PARAMETERS are
@@ -884,6 +884,29 @@ def is_history(f: str) -> bool:
     return bool(re.search(r"(^|/)(CHANGELOG|BUGS|ROADMAP)\.md$|/adr/", f))
 
 
+FENCE = re.compile(r"^[ \t]*(`{3,}|~{3,})(.*)$")
+
+
+def _fence_walk(lines):
+    """(line, fenced, code) per line, fences nesting the CommonMark way: a fence closes only on
+    the same character, at least as long, with nothing after it; a fence opens inside a MyST
+    directive fence (```{name}), never inside a code fence. `fenced`: inside any fence, or a
+    fence line itself. `code`: inside a code fence, or a fence line — a directive's text is
+    markup, so a woven `{upstream}` block reads as prose while the code it holds does not."""
+    stack = []
+    for ln in lines:
+        m = FENCE.match(ln)
+        if m and stack and m.group(1)[0] == stack[-1][0][0] \
+                and len(m.group(1)) >= len(stack[-1][0]) and not m.group(2).strip():
+            stack.pop()
+            yield ln, True, True
+        elif m and (not stack or stack[-1][1].startswith("{")):
+            stack.append((m.group(1), m.group(2).strip()))
+            yield ln, True, True
+        else:
+            yield ln, bool(stack), any(not info.startswith("{") for _, info in stack)
+
+
 def _code_spans(line: str) -> list:
     """Character ranges inside backticks. 'make it' in prose is the English verb;
     `make it` in code voice is a command. Only the second is documentation."""
@@ -895,11 +918,9 @@ def documented_commands(repo: Path, files: list) -> dict:
     Only code-voice mentions count: inside backticks, or inside a fenced block."""
     found = {}
     for f in files:
-        fenced = False
         lines = (repo / f).read_text(errors="replace").splitlines()
-        for i, line in enumerate(lines, 1):
-            if line.lstrip().startswith("```"):
-                fenced = not fenced
+        for i, (line, _, fenced) in enumerate(_fence_walk(lines), 1):
+            if FENCE.match(line):
                 continue
             spans = _code_spans(line)
             for m in DOC_COMMAND.finditer(line):
@@ -923,17 +944,13 @@ ES_PROSE_DENSITY = 0.05
 
 
 def prose_tokens(repo: Path, f: str) -> list:
-    """The prose of one file: fenced blocks toggled out, inline code spans blanked
+    """The prose of one file: code fences out (directive fences read through, see _fence_walk), inline code spans blanked
     (same-length blanks keep the later spans' offsets valid), headings counted — a
     heading is prose. Tokenized exactly as doc_lang tokenizes: lowercased, accents
     native, so the one stopword set serves both readers."""
     out = []
-    fenced = False
-    for line in (repo / f).read_text(errors="replace").splitlines():
-        if line.lstrip().startswith("```"):
-            fenced = not fenced
-            continue
-        if fenced:
+    for line, _, code in _fence_walk((repo / f).read_text(errors="replace").splitlines()):
+        if code:
             continue
         for a, b in _code_spans(line):
             line = line[:a] + " " * (b - a) + line[b:]
@@ -1461,7 +1478,6 @@ def _r_diataxis(ctx):
 # scalar keys and one flow list), so a line regex is the parser — stdlib only, like the rest.
 FM_LINE = re.compile(r"^([a-z_]+):[ \t]*(.*?)[ \t]*$", re.M)
 H2 = re.compile(r"^##[ \t]+(.+?)[ \t]*#*[ \t]*$")
-FENCE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})(.*)$")
 
 
 def _h2s(body: str) -> list:
@@ -1469,18 +1485,8 @@ def _h2s(body: str) -> list:
     inside a directive fence (a woven `{upstream}` block) is that block's own structure. Fences
     nest the CommonMark way — a fence closes only on the same character, at least as long,
     with nothing after it — so a 4-backtick directive may hold 3-backtick code."""
-    out, opener = [], None
-    for ln in body.split("\n"):
-        m = FENCE.match(ln)
-        if opener is None:
-            if m:
-                opener = m.group(1)
-            elif hm := H2.match(ln):
-                out.append(hm.group(1))
-        elif m and m.group(1)[0] == opener[0] and len(m.group(1)) >= len(opener) \
-                and not m.group(2).strip():
-            opener = None
-    return out
+    return [hm.group(1) for ln, fenced, _ in _fence_walk(body.split("\n"))
+            if not fenced and (hm := H2.match(ln))]
 
 
 def catalog_repos(repo: Path) -> list:
@@ -2401,6 +2407,19 @@ Ver el [aviso y licencias](https://aps-conecta.github.io/documentation/aviso/).
                 assert probe in raw and probe not in readme_tokens, probe
             excluded = set(raw) - set(readme_tokens)
             assert excluded and not excluded & set(P["es_stopwords"]), sorted(excluded)
+            # A woven page (documentation): a 4-backtick directive fence holds Spanish markup and
+            # a nested 3-backtick code fence holds English. CommonMark nesting reads the
+            # directive's text as prose and drops the code; a toggle on every ``` line read
+            # the code as prose and the Spanish as code (documentation weave, user-manual-files-1).
+            woven = repo_es / "tejida.md"
+            woven.write_text(
+                "# T\n\n````{upstream} user_manual/x.rst@abc\nEl usuario puede abrir la carpeta"
+                " y compartir los archivos con su equipo.\n\n```bash\nthe quick fox jumps over"
+                " the lazy dog\n```\n\nLa carpeta queda en la lista de archivos del grupo.\n````\n")
+            woven_tokens = prose_tokens(repo_es, "tejida.md")
+            assert {"carpeta", "compartir", "grupo"} <= set(woven_tokens), woven_tokens
+            assert "quick" not in woven_tokens and "lazy" not in woven_tokens, woven_tokens
+            woven.unlink()
             # silent dormancy: demo carries no marker and yields nothing; flipping ONLY the
             # docs_es fact makes its English README fire — the org-wide list at work.
             ctx_demo = {"path": repo, "facts": facts, "files": facts["governed"],
