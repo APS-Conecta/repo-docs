@@ -19,6 +19,12 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
   (the woven Nextcloud manuals plus the APS chapters) only read alike, and filter in search, if a
   machine holds the shape. An opted-in repo stands `diataxis-verification` down: the guide skeleton
   already requires Verificación, at error.
+- **`site-structure` fences nest the CommonMark way; `esqueleto: plataforma` (scribe S1c).** The H2
+  scan toggled on any backtick line, so a 4-backtick `{upstream}` block holding 3-backtick code
+  mis-nested and leaked the block's headings into the page skeleton. A fence now closes only on the
+  same character, at least as long, with nothing after it. Pages built from woven upstream blocks use
+  the `plataforma` override: APS writes `Resumen` and an optional «En APS Conecta Gestión»; the blocks
+  keep upstream's own headings inside their fences.
 
 ### Removed
 

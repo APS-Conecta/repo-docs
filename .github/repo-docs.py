@@ -52,7 +52,7 @@ PROFILES = _resource("profiles")
 # Deliberately not a `string.Template` placeholder: this whole file is rendered, so a placeholder
 # here would also be substituted inside the comparison below that reads it. Every dollar-sigil token
 # in this file is substituted on the way out, which is why none of the prose in it writes one.
-CANON_STAMP = "fd28d49ac5a4"
+CANON_STAMP = "b9010c5c4b67"
 
 # ---- craft vs decision (ADR 0002) --------------------------------------------------
 # Every rule below is craft: true of documentation anywhere. Every rule's PARAMETERS are
@@ -1461,17 +1461,25 @@ def _r_diataxis(ctx):
 # scalar keys and one flow list), so a line regex is the parser — stdlib only, like the rest.
 FM_LINE = re.compile(r"^([a-z_]+):[ \t]*(.*?)[ \t]*$", re.M)
 H2 = re.compile(r"^##[ \t]+(.+?)[ \t]*#*[ \t]*$")
-FENCE = re.compile(r"^[ \t]*(```|~~~)")
+FENCE = re.compile(r"^[ \t]{0,3}(`{3,}|~{3,})(.*)$")
 
 
 def _h2s(body: str) -> list:
-    """H2 headings outside fenced code: a heading quoted in a code block is an example."""
-    out, fenced = [], False
+    """H2 headings outside fenced blocks: a heading inside a code block is an example, and one
+    inside a directive fence (a woven `{upstream}` block) is that block's own structure. Fences
+    nest the CommonMark way — a fence closes only on the same character, at least as long,
+    with nothing after it — so a 4-backtick directive may hold 3-backtick code."""
+    out, opener = [], None
     for ln in body.split("\n"):
-        if FENCE.match(ln):
-            fenced = not fenced
-        elif not fenced and (m := H2.match(ln)):
-            out.append(m.group(1))
+        m = FENCE.match(ln)
+        if opener is None:
+            if m:
+                opener = m.group(1)
+            elif hm := H2.match(ln):
+                out.append(hm.group(1))
+        elif m and m.group(1)[0] == opener[0] and len(m.group(1)) >= len(opener) \
+                and not m.group(2).strip():
+            opener = None
     return out
 
 
@@ -2141,10 +2149,20 @@ def selftest() -> None:
                  "## Taxonomía de errores\n\nx\n\n## Deuda técnica y límites\n\nx\n")
     assert site_structure_problems("desarrollo/farmacia.md", contratos, cat) == []
     assert site_structure_problems("desarrollo/farmacia.md", contratos.replace("contratos\n", "otro\n", 1),
-                                   cat) == ["esqueleto 'otro' is not one of contratos"]
+                                   cat) == ["esqueleto 'otro' is not one of plataforma, contratos"]
     index = "---\ntipo: referencia\naudiencia: usuario\napps: []\nresumen: Usuario.\n---\n\n# Usuario\n"
     assert site_structure_problems("usuario/index.md", index, cat) == []     # skeleton-exempt
     assert site_structure_problems("usuario/index.md", index, []) == []      # no catalog: no membership
+    # Fences nest the CommonMark way: a 4-backtick {upstream} block holding a 3-backtick code
+    # block closes only on 4 backticks, so headings anywhere inside it are the block's, not
+    # the page's skeleton.
+    woven = ("---\ntipo: guia\nesqueleto: plataforma\naudiencia: usuario\napps: []\n"
+             "resumen: Archivos.\n---\n\n# Archivos\n\n## Resumen\n\nx\n\n"
+             "````{upstream} user_manual/files/access_webgui.rst@3ad9158\n## Navegar\n\n"
+             "```bash\nls\n```\n\n## Etiquetar\n````\n\n## En APS Conecta Gestión\n\nx\n")
+    assert site_structure_problems("usuario/archivos.md", woven, cat) == []
+    assert site_structure_problems("usuario/archivos.md", woven.replace("## Resumen\n\nx\n\n", ""),
+                                   cat) == ["H2 skeleton for plataforma: missing 'Resumen'"]
 
     # `composer run X` is the same script as `composer X`; both spellings resolve, and an
     # unknown script is still a phantom under either.
