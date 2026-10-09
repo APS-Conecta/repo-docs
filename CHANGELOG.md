@@ -25,6 +25,9 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
   same character, at least as long, with nothing after it. Pages built from woven upstream blocks use
   the `plataforma` override: APS writes `Resumen` and an optional «En APS Conecta Gestión»; the blocks
   keep upstream's own headings inside their fences.
+- **`esqueleto: borrador` (scribe S1d).** A placeholder page declares itself and owes only `Resumen`
+  (and may list its `Secciones previstas`), so the site can opt into `site-structure` before every
+  chapter is written, and Scribe's chapter lane finds placeholders by this key instead of guessing.
 
 ### Removed
 

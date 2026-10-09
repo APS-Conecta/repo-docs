@@ -52,7 +52,7 @@ PROFILES = _resource("profiles")
 # Deliberately not a `string.Template` placeholder: this whole file is rendered, so a placeholder
 # here would also be substituted inside the comparison below that reads it. Every dollar-sigil token
 # in this file is substituted on the way out, which is why none of the prose in it writes one.
-CANON_STAMP = "b9010c5c4b67"
+CANON_STAMP = "bbab03ea4007"
 
 # ---- craft vs decision (ADR 0002) --------------------------------------------------
 # Every rule below is craft: true of documentation anywhere. Every rule's PARAMETERS are
@@ -2149,7 +2149,7 @@ def selftest() -> None:
                  "## Taxonomía de errores\n\nx\n\n## Deuda técnica y límites\n\nx\n")
     assert site_structure_problems("desarrollo/farmacia.md", contratos, cat) == []
     assert site_structure_problems("desarrollo/farmacia.md", contratos.replace("contratos\n", "otro\n", 1),
-                                   cat) == ["esqueleto 'otro' is not one of plataforma, contratos"]
+                                   cat) == ["esqueleto 'otro' is not one of plataforma, borrador, contratos"]
     index = "---\ntipo: referencia\naudiencia: usuario\napps: []\nresumen: Usuario.\n---\n\n# Usuario\n"
     assert site_structure_problems("usuario/index.md", index, cat) == []     # skeleton-exempt
     assert site_structure_problems("usuario/index.md", index, []) == []      # no catalog: no membership
@@ -2163,6 +2163,13 @@ def selftest() -> None:
     assert site_structure_problems("usuario/archivos.md", woven, cat) == []
     assert site_structure_problems("usuario/archivos.md", woven.replace("## Resumen\n\nx\n\n", ""),
                                    cat) == ["H2 skeleton for plataforma: missing 'Resumen'"]
+    # A placeholder declares itself: esqueleto: borrador owes only Resumen (and may list the
+    # sections it will have). Scribe's chapter lane picks pages by this key, not by guessing.
+    draft = ("---\ntipo: guia\nesqueleto: borrador\naudiencia: usuario\napps: [farmacia]\n"
+             "resumen: Farmacia.\n---\n\n# Farmacia\n\n## Resumen\n\nx\n\n## Secciones previstas\n\n- y\n")
+    assert site_structure_problems("usuario/farmacia.md", draft, cat) == []
+    assert site_structure_problems("usuario/farmacia.md", draft.replace("## Resumen", "## Pasos"), cat) == \
+        ["H2 'Pasos' is not in the borrador skeleton", "H2 skeleton for borrador: missing 'Resumen'"]
 
     # `composer run X` is the same script as `composer X`; both spellings resolve, and an
     # unknown script is still a phantom under either.

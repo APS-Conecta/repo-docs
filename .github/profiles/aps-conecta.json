@@ -37,7 +37,7 @@
     "desarrollo/",
     "proyecto/"
   ],
-  "_comment_site_structure": "scribe Q24: an opted-in repo (empty marker .github/site-structure) types every page under these dirs with front matter (tipo, audiencia, apps, resumen) and a fixed H2 skeleton per tipo, or per the esqueleto override. A name prefixed '?' is optional; the H2s present must follow the skeleton's order and carry nothing else. index.md pages owe the front matter only. esqueleto: plataforma is for pages built from woven {upstream} blocks: the APS-written H2s are Resumen and an optional «En APS Conecta Gestión»; the blocks keep upstream's own headings inside their fences. apps are checked against the catalog file when the repo has one.",
+  "_comment_site_structure": "scribe Q24: an opted-in repo (empty marker .github/site-structure) types every page under these dirs with front matter (tipo, audiencia, apps, resumen) and a fixed H2 skeleton per tipo, or per the esqueleto override. A name prefixed '?' is optional; the H2s present must follow the skeleton's order and carry nothing else. index.md pages owe the front matter only. esqueleto: plataforma is for pages built from woven {upstream} blocks: the APS-written H2s are Resumen and an optional «En APS Conecta Gestión»; the blocks keep upstream's own headings inside their fences. esqueleto: borrador marks a placeholder page (Resumen, optional Secciones previstas) until Scribe's chapter lane writes it. apps are checked against the catalog file when the repo has one.",
   "site_structure": {
     "dirs": ["usuario/", "administracion/", "desarrollo/", "proyecto/"],
     "keys": ["tipo", "audiencia", "apps", "resumen"],
@@ -53,6 +53,7 @@
     },
     "overrides": {
       "plataforma": ["Resumen", "?En APS Conecta Gestión"],
+      "borrador": ["Resumen", "?Secciones previstas"],
       "contratos": ["Propósito y diseño", "?Contratos de componentes y API", "?Transiciones de estado", "?Taxonomía de errores", "?Concurrencia e invariantes", "?Dominios de fallo", "Deuda técnica y límites"]
     }
   },
