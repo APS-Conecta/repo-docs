@@ -888,23 +888,27 @@ FENCE = re.compile(r"^[ \t]*(`{3,}|~{3,})(.*)$")
 
 
 def _fence_walk(lines):
-    """(line, fenced, code) per line, fences nesting the CommonMark way: a fence closes only on
+    """(line, fenced, code, quoted) per line, fences nesting the CommonMark way: a fence closes only on
     the same character, at least as long, with nothing after it; a fence opens inside a MyST
     directive fence (```{name}), never inside a code fence. `fenced`: inside any fence, or a
     fence line itself. `code`: inside a code fence, or a fence line — a directive's text is
-    markup, so a woven `{upstream}` block reads as prose while the code it holds does not."""
+    markup, so a woven `{upstream}` block reads as prose while the code it holds does not.
+    `quoted`: inside a woven `{upstream}` block — another project's manual, whose commands and
+    paths are that project's, not this repo's."""
     stack = []
     for ln in lines:
         m = FENCE.match(ln)
         if m and stack and m.group(1)[0] == stack[-1][0][0] \
                 and len(m.group(1)) >= len(stack[-1][0]) and not m.group(2).strip():
+            quoted = any(info.startswith("{upstream}") for _, info in stack)
             stack.pop()
-            yield ln, True, True
+            yield ln, True, True, quoted
         elif m and (not stack or stack[-1][1].startswith("{")):
             stack.append((m.group(1), m.group(2).strip()))
-            yield ln, True, True
+            yield ln, True, True, any(info.startswith("{upstream}") for _, info in stack)
         else:
-            yield ln, bool(stack), any(not info.startswith("{") for _, info in stack)
+            yield ln, bool(stack), any(not info.startswith("{") for _, info in stack), \
+                any(info.startswith("{upstream}") for _, info in stack)
 
 
 def _code_spans(line: str) -> list:
@@ -919,8 +923,8 @@ def documented_commands(repo: Path, files: list) -> dict:
     found = {}
     for f in files:
         lines = (repo / f).read_text(errors="replace").splitlines()
-        for i, (line, _, fenced) in enumerate(_fence_walk(lines), 1):
-            if FENCE.match(line):
+        for i, (line, _, fenced, quoted) in enumerate(_fence_walk(lines), 1):
+            if FENCE.match(line) or quoted:
                 continue
             spans = _code_spans(line)
             for m in DOC_COMMAND.finditer(line):
@@ -949,7 +953,7 @@ def prose_tokens(repo: Path, f: str) -> list:
     heading is prose. Tokenized exactly as doc_lang tokenizes: lowercased, accents
     native, so the one stopword set serves both readers."""
     out = []
-    for line, _, code in _fence_walk((repo / f).read_text(errors="replace").splitlines()):
+    for line, _, code, _ in _fence_walk((repo / f).read_text(errors="replace").splitlines()):
         if code:
             continue
         for a, b in _code_spans(line):
@@ -1485,7 +1489,7 @@ def _h2s(body: str) -> list:
     inside a directive fence (a woven `{upstream}` block) is that block's own structure. Fences
     nest the CommonMark way — a fence closes only on the same character, at least as long,
     with nothing after it — so a 4-backtick directive may hold 3-backtick code."""
-    return [hm.group(1) for ln, fenced, _ in _fence_walk(body.split("\n"))
+    return [hm.group(1) for ln, fenced, _, _ in _fence_walk(body.split("\n"))
             if not fenced and (hm := H2.match(ln))]
 
 
@@ -2176,6 +2180,15 @@ def selftest() -> None:
     assert site_structure_problems("usuario/farmacia.md", draft, cat) == []
     assert site_structure_problems("usuario/farmacia.md", draft.replace("## Resumen", "## Pasos"), cat) == \
         ["H2 'Pasos' is not in the borrador skeleton", "H2 skeleton for borrador: missing 'Resumen'"]
+
+    # A woven {upstream} block quotes another project's manual: its `make help` is that project's
+    # Makefile, not this repo's (documentation exapp devsetup), so it is no documented command here.
+    # The same command outside the block still is.
+    with tempfile.TemporaryDirectory() as td:
+        Path(td, "a.md").write_text("Run `make html`.\n\n````{upstream} developer_manual/x.rst@3ad9158\n"
+                                    "Ejecutar `make help`:\n\n```\nmake dock-sock\n```\n````\n\n`make serve`\n")
+        assert sorted(documented_commands(Path(td), ["a.md"])) == ["make html", "make serve"], \
+            sorted(documented_commands(Path(td), ["a.md"]))
 
     # `composer run X` is the same script as `composer X`; both spellings resolve, and an
     # unknown script is still a phantom under either.
