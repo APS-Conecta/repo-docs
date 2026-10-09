@@ -40,6 +40,17 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **A woven `{upstream}` block's commands are the quoted project's (`phantom-command`,
+  `unverified-command`).** Symptom: in the documentation weave (batch developer-manual-exapp-
+  development-1) `exapp-development/devsetup.md` failed `phantom-command` four times, on `make help`,
+  `make dock2port`, `make dock-port` and `make dock-sock`. Root cause: `documented_commands` counted every
+  code-voice command inside any fence, and a woven block quotes the Nextcloud manual, whose commands
+  are upstream's development Makefile, not the documentation repo's. The fidelity gate requires them
+  byte-identical, so no faithful page could pass. Fix: `_fence_walk` also reports `quoted` (inside an
+  `{upstream}` directive fence) and `documented_commands` skips those lines; the same command outside the
+  block still counts. Caught by the weave translator, which traced it to `documented_commands` instead of
+  rewording upstream; pinned by a selftest page that failed first.
+
 - **Prose readers nest fences the CommonMark way (`doc-language-es`, documented commands).**
   Symptom: in the documentation weave (batch user-manual-files-1) a Spanish page failed
   `doc-language-es` at 0.0499 density, and woven pages without inner code were never
