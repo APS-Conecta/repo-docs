@@ -8,6 +8,15 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+
+- **The `Docs:` trailer rule (scribe S1).** `pr-gate` no longer asks a PR touching `l10n/ src/ templates/
+  appinfo/ lib/Command/ lib/Settings/` for `Docs: APS-Conecta/documentation#<n>` or `Docs: sin cambios`.
+  The line was self-declared and nothing verified it; the scribe initiative's Scribe routine now reads
+  every merged PR and writes the documentation itself. The profile keys `docs_line_paths` and
+  `pr_exempt_logins` go with it (no reader left; the selftest now asserts their absence). The
+  English-title check stays, for every login. Canon re-stamped; repo-docs' own copies re-rendered.
+
 ### Fixed
 
 - **The R1b merge dropped five files; `main` went red (#8, #9, this entry).** Merging `main`
