@@ -40,6 +40,18 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **Prose readers nest fences the CommonMark way (`doc-language-es`, documented commands).**
+  Symptom: in the documentation weave (batch user-manual-files-1) a Spanish page failed
+  `doc-language-es` at 0.0499 density, and woven pages without inner code were never
+  language-checked at all. Root cause: `prose_tokens` and `documented_commands` toggled a fence on
+  any line starting with three backticks, so a 4-backtick `{upstream}` directive opened a "fence"
+  and each inner 3-backtick code fence flipped it, reading the code as prose and the Spanish as
+  code. Fix: one `_fence_walk` for all three fence readers (the H2 skeleton reader included): a
+  fence closes only on the same character, at least as long, with nothing after it; a fence opens
+  inside a MyST directive fence, never inside a code fence; a directive's text reads as prose, the
+  code it holds does not. Caught by the weave translator, which recomputed the density with a
+  length-aware reader (0.221); pinned by a selftest woven page that failed first.
+
 - **The R1b merge dropped five files; `main` went red (#8, #9, this entry).** Merging `main`
   into `feat/docs-es-r1b` (9345370) resolved its conflicts toward `main` and silently dropped
   R1b's `profiles/aps-conecta.json` keys, its re-rendered vendored copies, these CHANGELOG
