@@ -44,7 +44,8 @@ The README's **Documentación** section is the map — the `readme-sections` con
 orders it — and the governed documents are named from there. Each page carries its own mode in
 front matter (`tipo:`), values from the Diátaxis quadrants, so the mode discipline lives in the
 page instead of a four-column table maintained in parallel; `diataxis-verification` reads that
-typing. The rules own the teaching; this section only says where navigation lives.
+typing, and a repo opted into `site-structure` (`.github/site-structure`) owes the full front matter
+and the H2 skeleton its profile names per type. The rules own the teaching; this section only says where navigation lives.
 
 Level `ultra` adds `docs/adr/` with statuses, archetype reference stubs, and the Diátaxis split:
 

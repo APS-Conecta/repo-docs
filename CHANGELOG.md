@@ -8,6 +8,18 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **`site-structure` (scribe S1b, error, opt-in).** A repo carrying `.github/site-structure` types every
+  page under `usuario/ administracion/ desarrollo/ proyecto/`: front matter `tipo`, `audiencia` (= its
+  directory), `apps` (a list, checked against `catalogo.yml` when present) and `resumen` (≤160 chars),
+  plus one H2 skeleton per `tipo` — or per the `esqueleto: contratos` override for an app's developer
+  page — in order, required headings present, nothing else beside them. Shapes live in the profile
+  (`site_structure`); `site_structure_problems()` is the craft. The site needs it because ~550 pages
+  (the woven Nextcloud manuals plus the APS chapters) only read alike, and filter in search, if a
+  machine holds the shape. An opted-in repo stands `diataxis-verification` down: the guide skeleton
+  already requires Verificación, at error.
+
 ### Removed
 
 - **The `Docs:` trailer rule (scribe S1).** `pr-gate` no longer asks a PR touching `l10n/ src/ templates/

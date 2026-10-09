@@ -585,6 +585,8 @@ def scan(repo: Path) -> dict:
         # Spanish opt-in (ADR 0006): the marker is this repo's own decision, so the probe
         # reads the per-repo parameter — never the module ROOT.
         "docs_es": (repo / ".github" / "docs-es").exists(),
+        # Page-structure opt-in (scribe Q24), read from the same per-repo parameter.
+        "site_structure": (repo / ".github" / "site-structure").exists(),
     }
 
 
@@ -1440,7 +1442,10 @@ def _r_diataxis(ctx):
     reference material is Diátaxis. The guide type is declared where a machine can read it
     (front matter `tipo: guia`), so the missing Verificación section can be found the same way.
     Typing a guide is craft, not language policy: NOT gated on the Spanish opt-in marker, and an
-    English repo may carry typed guides too."""
+    English repo may carry typed guides too. A repo opted into site-structure stands this down:
+    that rule requires the whole guide skeleton, Verificación included, at error."""
+    if ctx["facts"].get("site_structure"):
+        return
     for f in ctx["files"]:
         text = (ctx["path"] / f).read_text(errors="replace")
         m = FRONT_MATTER.match(text)
@@ -1450,6 +1455,100 @@ def _r_diataxis(ctx):
             yield Finding("diataxis-verification", "warn", f, None,
                           "front matter tipo: guia but no Verificación heading — a guide must "
                           "tell the reader how to check it worked")
+
+
+# One front-matter line: `key: value`. The page shapes this reads are flat by contract (four
+# scalar keys and one flow list), so a line regex is the parser — stdlib only, like the rest.
+FM_LINE = re.compile(r"^([a-z_]+):[ \t]*(.*?)[ \t]*$", re.M)
+H2 = re.compile(r"^##[ \t]+(.+?)[ \t]*#*[ \t]*$")
+FENCE = re.compile(r"^[ \t]*(```|~~~)")
+
+
+def _h2s(body: str) -> list:
+    """H2 headings outside fenced code: a heading quoted in a code block is an example."""
+    out, fenced = [], False
+    for ln in body.split("\n"):
+        if FENCE.match(ln):
+            fenced = not fenced
+        elif not fenced and (m := H2.match(ln)):
+            out.append(m.group(1))
+    return out
+
+
+def catalog_repos(repo: Path) -> list:
+    """Repo slugs of the catalog file the profile names, or [] when the repo has none."""
+    cat = repo / (P.get("site_structure") or {}).get("catalog", "")
+    if not cat.is_file():
+        return []
+    return re.findall(r"^\s*-\s*repo:\s*([A-Za-z0-9._-]+)\s*$", cat.read_text(errors="replace"), re.M)
+
+
+def site_structure_problems(rel: str, text: str, catalog: list) -> list:
+    """What one page under the site dirs owes (scribe Q24): typed front matter whose audiencia
+    is its directory, and an H2 skeleton chosen by tipo (or the esqueleto override) whose
+    headings appear in order, required ones present, nothing else beside them. Shapes are the
+    profile's; this function is the craft that reads them."""
+    cfg = P["site_structure"]
+    m = FRONT_MATTER.match(text)
+    if not m:
+        return ["no front matter"]
+    fm = dict(FM_LINE.findall(m.group(1)))
+    missing = [k for k in cfg["keys"] if not fm.get(k)]
+    if missing:
+        return [f"front matter lacks {', '.join(missing)}"]
+    out = []
+    if fm["tipo"] not in cfg["tipos"]:
+        out.append(f"tipo '{fm['tipo']}' is not one of {', '.join(cfg['tipos'])}")
+    top = rel.split("/", 1)[0]
+    if fm["audiencia"] != top:
+        out.append(f"audiencia '{fm['audiencia']}' does not match the directory '{top}'")
+    if not (fm["apps"].startswith("[") and fm["apps"].endswith("]")):
+        out.append("apps must be a [list]")
+    elif catalog:
+        apps = [a.strip() for a in fm["apps"][1:-1].split(",") if a.strip()]
+        out += [f"apps names '{a}', not in the catalog" for a in apps if a not in catalog]
+    if len(fm["resumen"]) > cfg["resumen_max"]:
+        out.append(f"resumen is {len(fm['resumen'])} chars (max {cfg['resumen_max']})")
+    if rel.rsplit("/", 1)[-1] in cfg["skeleton_exempt"]:
+        return out
+    if "esqueleto" in fm:
+        if fm["esqueleto"] not in cfg["overrides"]:
+            return out + [f"esqueleto '{fm['esqueleto']}' is not one of {', '.join(cfg['overrides'])}"]
+        name, shape = fm["esqueleto"], cfg["overrides"][fm["esqueleto"]]
+    elif fm["tipo"] in cfg["skeletons"]:
+        name, shape = fm["tipo"], cfg["skeletons"][fm["tipo"]]
+    else:
+        return out
+    names = [h.lstrip("?") for h in shape]
+    folded = [_fold(n) for n in names]
+    got = _h2s(text[m.end():])
+    pos = -1
+    for h in got:
+        if _fold(h) not in folded:
+            out.append(f"H2 '{h}' is not in the {name} skeleton")
+            continue
+        i = folded.index(_fold(h))
+        if i < pos:
+            out.append(f"H2 '{h}' is out of order for {name} ({', '.join(names)})")
+        pos = max(pos, i)
+    have = {_fold(h) for h in got}
+    out += [f"H2 skeleton for {name}: missing '{n}'"
+            for n, raw in zip(names, shape) if not raw.startswith("?") and _fold(n) not in have]
+    return out
+
+
+@rule("site-structure", "error")
+def _r_site_structure(ctx):
+    if not ctx["facts"].get("site_structure"):
+        return                      # opt-in: only a repo carrying .github/site-structure
+    dirs = tuple(P["site_structure"]["dirs"])
+    catalog = catalog_repos(ctx["path"])
+    for f in ctx["files"]:
+        if not f.startswith(dirs):
+            continue
+        text = (ctx["path"] / f).read_text(errors="replace")
+        for msg in site_structure_problems(f, text, catalog):
+            yield Finding("site-structure", "error", f, None, msg)
 
 
 @rule("readme-sections", "warn")
@@ -1608,6 +1707,8 @@ RATIONALE = {
     "claim-boxes": "Unchecked boxes are a backlog hiding in a document.",
     "adr-status": "22+ ADRs, zero Status fields — nothing can be superseded.",
     "diataxis-verification": "A typed guide (tipo: guia) must tell the reader how to check it worked.",
+    "site-structure": "scribe Q24: typed front matter + one H2 skeleton per tipo, so ~550 pages read alike "
+                      "and search can filter them; opt-in via .github/site-structure.",
     "unfilled-contract": "A shipped outline looks like documentation and is not.",
     "licence-declaration": "Apps declare a licence in appinfo, composer and package at once.",
     "licence-inventory": "The notices document must match what is actually installed.",
@@ -2004,6 +2105,47 @@ def selftest() -> None:
     assert "docs_line_paths" not in P and "pr_exempt_logins" not in P, \
         "the Docs: trailer keys have no reader left — delete them from the profile"
 
+    # site-structure (scribe Q24), every direction — pure calls over one page's text. The
+    # profile owns the shapes; these asserts pin the craft that reads them.
+    cat = ["farmacia", "gestion"]
+    ok_guia = ("---\ntipo: guia\naudiencia: usuario\napps: [farmacia]\n"
+               "resumen: Cargar el arsenal desde una planilla.\n---\n\n# Cargar el arsenal\n\n"
+               "## Objetivo\n\nx\n\n## Requisitos\n\nx\n\n## Pasos\n\nx\n\n"
+               "```\n## not a heading inside a fence\n```\n\n## Verificacion\n\nx\n")
+    assert site_structure_problems("usuario/farmacia/cargar.md", ok_guia, cat) == []
+    assert site_structure_problems("usuario/x.md", "# x\n", cat) == ["no front matter"]
+    assert site_structure_problems("usuario/x.md", ok_guia.replace("apps: [farmacia]\n", ""),
+                                   cat) == ["front matter lacks apps"]
+    assert site_structure_problems("usuario/x.md", ok_guia.replace("tipo: guia", "tipo: manual"),
+                                   cat) == ["tipo 'manual' is not one of tutorial, guia, referencia, explicacion"]
+    assert site_structure_problems("proyecto/x.md", ok_guia, cat) == \
+        ["audiencia 'usuario' does not match the directory 'proyecto'"]
+    assert site_structure_problems("usuario/x.md", ok_guia.replace("[farmacia]", "[farmacia, nope]"),
+                                   cat) == ["apps names 'nope', not in the catalog"]
+    assert site_structure_problems("usuario/x.md", ok_guia.replace("[farmacia]", "farmacia"),
+                                   cat) == ["apps must be a [list]"]
+    assert site_structure_problems("usuario/x.md", ok_guia.replace(
+        "resumen: Cargar el arsenal desde una planilla.", "resumen: " + "x" * 161), cat) == \
+        ["resumen is 161 chars (max 160)"]
+    assert site_structure_problems("usuario/x.md", ok_guia.replace("## Requisitos\n\nx\n\n", ""),
+                                   cat) == ["H2 skeleton for guia: missing 'Requisitos'"]
+    assert site_structure_problems("usuario/x.md", ok_guia.replace("## Pasos", "## Notas libres"),
+                                   cat) == ["H2 'Notas libres' is not in the guia skeleton",
+                                            "H2 skeleton for guia: missing 'Pasos'"]
+    swapped = ok_guia.replace("## Objetivo\n\nx\n\n## Requisitos", "## Requisitos\n\nx\n\n## Objetivo")
+    assert site_structure_problems("usuario/x.md", swapped, cat) == \
+        ["H2 'Objetivo' is out of order for guia (Objetivo, Requisitos, Pasos, Verificación, "
+         "Problemas frecuentes)"]
+    contratos = ("---\ntipo: referencia\nesqueleto: contratos\naudiencia: desarrollo\napps: [farmacia]\n"
+                 "resumen: Contratos de farmacia.\n---\n\n# farmacia\n\n## Propósito y diseño\n\nx\n\n"
+                 "## Taxonomía de errores\n\nx\n\n## Deuda técnica y límites\n\nx\n")
+    assert site_structure_problems("desarrollo/farmacia.md", contratos, cat) == []
+    assert site_structure_problems("desarrollo/farmacia.md", contratos.replace("contratos\n", "otro\n", 1),
+                                   cat) == ["esqueleto 'otro' is not one of contratos"]
+    index = "---\ntipo: referencia\naudiencia: usuario\napps: []\nresumen: Usuario.\n---\n\n# Usuario\n"
+    assert site_structure_problems("usuario/index.md", index, cat) == []     # skeleton-exempt
+    assert site_structure_problems("usuario/index.md", index, []) == []      # no catalog: no membership
+
     # `composer run X` is the same script as `composer X`; both spellings resolve, and an
     # unknown script is still a phantom under either.
     m = DOC_COMMAND.search("run `composer run test:unit` first")
@@ -2348,6 +2490,12 @@ Ver el [aviso y licencias](https://aps-conecta.github.io/documentation/aviso/).
             assert canon_vars(scan(repo))["branch"] == "main"
             sh(["git", "-C", str(repo), "checkout", "-q", "main"])
             assert any(f.rule == "adr-status" for f in _r_adr(ctx))
+            # site-structure is opt-in (.github/site-structure): demo has no marker, so the
+            # rule stays silent; an opted-in repo hands the guide check to it, so the
+            # Diátaxis WARN stands down there.
+            assert facts["site_structure"] is False
+            assert list(_r_site_structure(ctx)) == []
+            assert list(_r_diataxis(dict(ctx, facts=dict(facts, site_structure=True)))) == []
             dia = list(_r_diataxis(ctx))
             assert [f.file for f in dia] == ["docs/guias/sin.md"], [str(f) for f in dia]
             assert [f.severity for f in dia] == ["warn"], [str(f) for f in dia]

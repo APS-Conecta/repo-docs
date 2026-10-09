@@ -105,7 +105,7 @@ What this engine enforces mechanically, so the rules are not only advice: `phant
 and `licence-declaration` (one licence, four declarations), `readme-sections` and
 `unfilled-contract` (the Section Contract), `adr-status` (MADR), `github-metadata` (a description is
 documentation too), `diataxis-verification` (a typed guide must tell the reader how to check it
-worked). Rules 1, 2, 3, 6 and 7 are judgment and are read, never checked.
+worked), `site-structure` (opt-in: typed front matter and one H2 skeleton per page type). Rules 1, 2, 3, 6 and 7 are judgment and are read, never checked.
 
 Dated history is exempt from the retirement rule; `gestion/CONTRIBUTING.md` names which four files
 that means, and `is_history()` matches exactly those.
