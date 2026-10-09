@@ -37,6 +37,24 @@
     "desarrollo/",
     "proyecto/"
   ],
+  "_comment_site_structure": "scribe Q24: an opted-in repo (empty marker .github/site-structure) types every page under these dirs with front matter (tipo, audiencia, apps, resumen) and a fixed H2 skeleton per tipo, or per the esqueleto override. A name prefixed '?' is optional; the H2s present must follow the skeleton's order and carry nothing else. index.md pages owe the front matter only. apps are checked against the catalog file when the repo has one.",
+  "site_structure": {
+    "dirs": ["usuario/", "administracion/", "desarrollo/", "proyecto/"],
+    "keys": ["tipo", "audiencia", "apps", "resumen"],
+    "tipos": ["tutorial", "guia", "referencia", "explicacion"],
+    "resumen_max": 160,
+    "catalog": "catalogo.yml",
+    "skeleton_exempt": ["index.md"],
+    "skeletons": {
+      "guia": ["Objetivo", "Requisitos", "Pasos", "Verificación", "?Problemas frecuentes"],
+      "tutorial": ["Objetivo", "Requisitos", "Recorrido", "Resultado"],
+      "referencia": ["Resumen", "Tabla", "?Notas"],
+      "explicacion": ["Contexto", "Diseño", "Compromisos y límites"]
+    },
+    "overrides": {
+      "contratos": ["Propósito y diseño", "?Contratos de componentes y API", "?Transiciones de estado", "?Taxonomía de errores", "?Concurrencia e invariantes", "?Dominios de fallo", "Deuda técnica y límites"]
+    }
+  },
   "_comment_retired_paths": "ADR 0006: manuals live only in APS-Conecta/documentation and the legacy English paths below are retired — an opted-in repo carrying one deletes it rather than maintains it. Probed on the working tree, not the git index: an untracked straggler or a non-markdown file is invisible to tracked_md() and equally present. Three entries also sit in doc_language_exempt deliberately: exempt explained why a Spanish doc existed; retired says the path must not exist at all.",
   "retired_paths": [
     "BUGS.md",
