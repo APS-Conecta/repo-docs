@@ -40,6 +40,15 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **`secrets` fallback skips AWS's published example key (documentation, Scribe S4).** Where gitleaks
+  is absent — the 📚 Scribe routine's container — the fallback pattern scan flagged
+  `AKIAIOSFODNN7EXAMPLE`, the placeholder AWS documents and nextcloud/documentation's `occ
+  files_external:create` sample carries, on documentation's `main`, while CI's gitleaks passed it. The
+  routine then pushed past a red local check. Root cause: the fallback's `AKIA[0-9A-Z]{16}` had no
+  counterpart to gitleaks' default allowance for keys ending in `EXAMPLE`. `SECRET_HIGH` is now a module
+  constant that skips them; selftest asserts both directions. Caught by the S4 re-run's own report.
+
+
 - **A woven `{upstream}` block's commands are the quoted project's (`phantom-command`,
   `unverified-command`).** Symptom: in the documentation weave (batch developer-manual-exapp-
   development-1) `exapp-development/devsetup.md` failed `phantom-command` four times, on `make help`,
