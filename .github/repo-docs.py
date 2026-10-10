@@ -52,7 +52,7 @@ PROFILES = _resource("profiles")
 # Deliberately not a `string.Template` placeholder: this whole file is rendered, so a placeholder
 # here would also be substituted inside the comparison below that reads it. Every dollar-sigil token
 # in this file is substituted on the way out, which is why none of the prose in it writes one.
-CANON_STAMP = "85b7b2a95292"
+CANON_STAMP = "32433271ef5d"
 
 # ---- craft vs decision (ADR 0002) --------------------------------------------------
 # Every rule below is craft: true of documentation anywhere. Every rule's PARAMETERS are
@@ -2077,7 +2077,7 @@ def selftest() -> None:
     # sample `AKIAIOSFODNN7EXAMPLE` on documentation's main, where CI's gitleaks passes: AWS
     # publishes that key, and gitleaks' default rule skips keys ending in EXAMPLE. Both directions.
     assert not SECRET_HIGH.search("--config key=AKIAIOSFODNN7EXAMPLE"), "AWS's documented example key"
-    assert SECRET_HIGH.search("key=AKIA2JQXZ7NMOPQRSTUV"), "a real-shaped AWS key"
+    assert SECRET_HIGH.search("key=AKIA" + "2JQXZ7NMOPQRSTUV"), "a real-shaped AWS key"  # split: no literal for gitleaks
     assert SELF_REF.search("APS-Conecta's own code is proprietary."), \
         "the hyphenated organisation name must self-refer"
     assert not SELF_REF.search("https://github.com/APS-Conecta/gestion/blob/main/LICENSE"), \
