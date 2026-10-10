@@ -52,7 +52,7 @@ PROFILES = _resource("profiles")
 # Deliberately not a `string.Template` placeholder: this whole file is rendered, so a placeholder
 # here would also be substituted inside the comparison below that reads it. Every dollar-sigil token
 # in this file is substituted on the way out, which is why none of the prose in it writes one.
-CANON_STAMP = "32433271ef5d"
+CANON_STAMP = "9da993705f95"
 
 # ---- craft vs decision (ADR 0002) --------------------------------------------------
 # Every rule below is craft: true of documentation anywhere. Every rule's PARAMETERS are
@@ -1402,8 +1402,13 @@ def _r_phantom(ctx):
     have = available_commands(ctx["path"])
     if not have:
         return                      # no recognisable runner in this repo; nothing to compare
-    for cmd, (f, line, retired) in sorted(documented_commands(ctx["path"],
-                                                              ctx["files"]).items()):
+    files = ctx["files"]
+    if ctx["facts"].get("site_structure"):
+        # an opted-in site's pages document the suite's other repos (gestion's `make install`),
+        # never this repo's Makefile: compare only what lies outside the site dirs
+        site = tuple(P["site_structure"]["dirs"])
+        files = [f for f in files if not f.startswith(site)]
+    for cmd, (f, line, retired) in sorted(documented_commands(ctx["path"], files).items()):
         runner = cmd.split()[0]
         if not any(h.startswith(runner) for h in have):
             continue                # that runner is not this repo's; ignore rather than guess
@@ -2198,6 +2203,21 @@ def selftest() -> None:
                                     "Ejecutar `make help`:\n\n```\nmake dock-sock\n```\n````\n\n`make serve`\n")
         assert sorted(documented_commands(Path(td), ["a.md"])) == ["make html", "make serve"], \
             sorted(documented_commands(Path(td), ["a.md"]))
+
+    # An opted-in site's pages document the suite's other repositories (documentation's
+    # administracion/ names gestion's `make install`), never this repo's Makefile: phantom-command
+    # reads only the files outside the site dirs. A phantom in the repo's own README still fires.
+    with tempfile.TemporaryDirectory() as td:
+        Path(td, "Makefile").write_text("html:\n\techo\n")
+        Path(td, "administracion").mkdir()
+        Path(td, "administracion", "a.md").write_text("Ejecutar `make install` en gestion.\n")
+        Path(td, "README.md").write_text("Run `make html`, then `make nope`.\n")
+        ctx = {"path": Path(td), "files": ["README.md", "administracion/a.md"],
+               "facts": {"site_structure": True}}
+        assert [x.msg for x in _r_phantom(ctx)] == \
+            ["`make nope` is documented but no such target or script exists"], [x.msg for x in _r_phantom(ctx)]
+        ctx["facts"]["site_structure"] = False
+        assert len(list(_r_phantom(ctx))) == 2, "a repo without the marker reads every file"
 
     # `composer run X` is the same script as `composer X`; both spellings resolve, and an
     # unknown script is still a phantom under either.
