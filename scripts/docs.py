@@ -1240,6 +1240,11 @@ def gitleaks_argv(path: Path) -> list:
     return argv + ["--source", str(path)]
 
 
+# The fallback scan when gitleaks is absent. An AWS key ending in EXAMPLE is AWS's published
+# placeholder (AKIAIOSFODNN7EXAMPLE), which gitleaks' default rule allows too.
+SECRET_HIGH = re.compile(r"(ghp_[A-Za-z0-9]{20,}|BEGIN [A-Z ]*PRIVATE KEY|AKIA(?![0-9A-Z]{9}EXAMPLE)[0-9A-Z]{16})")
+
+
 @rule("secrets", "error")
 def _r_secrets(ctx):
     if shutil.which("gitleaks"):
@@ -1253,10 +1258,9 @@ def _r_secrets(ctx):
     for f in out.split("\n"):
         if f and blocked.search(f) and not f.endswith(".env.example"):
             yield Finding("secrets", "error", f, None, "secret-shaped file is tracked")
-    high = re.compile(r"(ghp_[A-Za-z0-9]{20,}|BEGIN [A-Z ]*PRIVATE KEY|AKIA[0-9A-Z]{16})")
     for f in ctx["files"]:
         for i, line in enumerate((ctx["path"] / f).read_text(errors="replace").splitlines(), 1):
-            if high.search(line):
+            if SECRET_HIGH.search(line):
                 yield Finding("secrets", "error", f, i, "high-confidence secret pattern")
 
 
@@ -2069,6 +2073,11 @@ def selftest() -> None:
     # `APS-Conecta`, which also matches every `github.com/APS-Conecta/<repo>` URL in our own
     # documentation. Both directions are asserted, and the pattern now holds no placeholder at all, so
     # it reads identically in canon and in every copy.
+    # Without gitleaks (the Scribe routine's container) the fallback pattern scan flagged upstream's
+    # sample `AKIAIOSFODNN7EXAMPLE` on documentation's main, where CI's gitleaks passes: AWS
+    # publishes that key, and gitleaks' default rule skips keys ending in EXAMPLE. Both directions.
+    assert not SECRET_HIGH.search("--config key=AKIAIOSFODNN7EXAMPLE"), "AWS's documented example key"
+    assert SECRET_HIGH.search("key=AKIA2JQXZ7NMOPQRSTUV"), "a real-shaped AWS key"
     assert SELF_REF.search("APS-Conecta's own code is proprietary."), \
         "the hyphenated organisation name must self-refer"
     assert not SELF_REF.search("https://github.com/APS-Conecta/gestion/blob/main/LICENSE"), \
