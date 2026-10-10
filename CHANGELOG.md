@@ -40,6 +40,16 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **`phantom-command` reads an opted-in site's own files only (documentation, scribe chapters).** The site's
+  pages under `usuario/ administracion/ desarrollo/ proyecto/` document the suite's other repositories:
+  `administracion/aprovisionamiento.md` names gestion's `make install`, `make seed`, `make smoke`. The rule
+  compared every code-voice `make X` with documentation's own Makefile, so 12 real gestion targets read as
+  phantoms, and `make test` passed only because documentation happens to have a `test` target. Caught when
+  the scribe-chapters batch run wrote the gestion admin pages (2026-10-10). On a repo carrying
+  `.github/site-structure`, the rule now skips the profile's `site_structure.dirs`; the repo's own
+  README and docs still fire. Same reasoning as the `{upstream}` exemption (#16): a page that quotes
+  another project's commands is not documenting this repo's.
+
 - **`secrets` fallback skips AWS's published example key (documentation, Scribe S4).** Where gitleaks
   is absent — the 📚 Scribe routine's container — the fallback pattern scan flagged
   `AKIAIOSFODNN7EXAMPLE`, the placeholder AWS documents and nextcloud/documentation's `occ
