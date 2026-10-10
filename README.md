@@ -61,7 +61,7 @@ MADR — en [`references/conventions.md`](references/conventions.md).
 
 ## Estado
 
-Funciona y está en su primer despliegue. 28 reglas, 5 hechos, 5 sondas de configuración, un perfil
+Funciona y está en su primer despliegue. 29 reglas, 5 hechos, 5 sondas de configuración, un perfil
 de dueño.
 
 El barrido semanal audita los doce repositorios del censo de la organización; este repositorio
