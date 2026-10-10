@@ -1,0 +1,11 @@
+# repo-docs' selftest builds a fabricated AWS-shaped key to prove the fallback secrets scan still
+# fires; commits 62daedf and d87f58f carried it as one literal before it was split (#18). Allowed by
+# exact value, nothing else. Legacy [allowlist]: gitleaks 8.21 ignores the newer [[allowlists]] table.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "repo-docs selftest fixture (fabricated, never a credential)"
+regexes = [
+  '''^AKIA2JQXZ7NMOPQRSTUV$''',
+]

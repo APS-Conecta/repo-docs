@@ -2077,7 +2077,7 @@ def selftest() -> None:
     # sample `AKIAIOSFODNN7EXAMPLE` on documentation's main, where CI's gitleaks passes: AWS
     # publishes that key, and gitleaks' default rule skips keys ending in EXAMPLE. Both directions.
     assert not SECRET_HIGH.search("--config key=AKIAIOSFODNN7EXAMPLE"), "AWS's documented example key"
-    assert SECRET_HIGH.search("key=AKIA2JQXZ7NMOPQRSTUV"), "a real-shaped AWS key"
+    assert SECRET_HIGH.search("key=AKIA" + "2JQXZ7NMOPQRSTUV"), "a real-shaped AWS key"  # split: no literal for gitleaks
     assert SELF_REF.search("APS-Conecta's own code is proprietary."), \
         "the hyphenated organisation name must self-refer"
     assert not SELF_REF.search("https://github.com/APS-Conecta/gestion/blob/main/LICENSE"), \
