@@ -57,8 +57,9 @@ with its Authority). A repo can be perfectly self-consistent and uniformly wrong
 
 ## Archetype
 
-What kind of thing a repo is — app, nextcloud-app, website, library, org-profile — inferred from
-stack markers rather than declared. The Archetype decides which sections its README owes.
+What kind of thing a repo is — app, nextcloud-app, website, library, org-profile, cli — inferred
+from stack markers unless the Profile declares it in `repo_archetypes`, as it must where no marker
+tells a CLI from a library. The Archetype decides which sections its README owes.
 
 ## Section Contract
 
