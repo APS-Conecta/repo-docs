@@ -47,8 +47,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.APS_BOT_PAT }}
           REPO_DOCS_ROOT: ${{ runner.temp }}/census
-        # `check --all` exits 1 on ANY open error finding — 41 sit open in AIO
-        # alone, baselined and known — so the exit code cannot be this job's red
+        # `check --all` exits 1 on ANY open error finding — baselined, known
+        # ones sit open across the org — so the exit code cannot be this job's red
         # line: the sweep's contract (header above) is red on NEW findings and
         # stamp drift, and stamp drift surfaces as a NEW canon-stamp fingerprint.
         # The full log still prints; only the verdict is the grep.
