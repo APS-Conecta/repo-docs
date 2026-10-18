@@ -31,6 +31,7 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 
+- **AIO's baseline rows.** APS-Conecta/AIO is being deleted (instalador holds all 49 of its commits), so its 89 `baseline.json` fingerprints are gone and the sweep comment no longer cites AIO's open findings. Deliberately left in the canon: the dead `repo_readmes` route for AIO in `profiles/aps-conecta.json` and the selftest assertion that exercises it — editing either changes `CANON_STAMP` and would flag stamp drift in every vendored repo; drop them with the next planned canon bump.
 - **The `Docs:` trailer rule (scribe S1).** `pr-gate` no longer asks a PR touching `l10n/ src/ templates/
   appinfo/ lib/Command/ lib/Settings/` for `Docs: APS-Conecta/documentation#<n>` or `Docs: sin cambios`.
   The line was self-declared and nothing verified it; the scribe initiative's Scribe routine now reads
