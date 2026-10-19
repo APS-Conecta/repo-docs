@@ -7,8 +7,9 @@
 # census, and fails on NEW findings —
 # canon drift, a stale stamp (--stamp-error raises it centrally, where canon/
 # is present), or a repo that joined the suite without canonizing (the census
-# tripwire, L8-01). The census = baseline keys ∪ OWN_APPS: 12-apps.sh is the
-# suite's own registry, so a repo cannot ship without being in it.
+# tripwire, L8-01). The census = baseline keys ∪ OWN_APPS: instalador's 12-apps.sh is the
+# suite's own registry (fetched as one file, not cloned: a clone under the census
+# root would be walked by check --all), so a repo cannot ship without being in it.
 name: sweep
 
 on:

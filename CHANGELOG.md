@@ -41,6 +41,15 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **The census registry comes from instalador, not gestion (gestion #245).** `census.py run` read `OWN_APPS` from
+  `gestion/provisioning/phases/12-apps.sh`, the frozen copy of the installer executor that gestion #245 deletes, so
+  the weekly sweep would have died on a missing file. It now fetches instalador's `12-apps.sh` as a single file
+  (`gh api`, into `--instalador`, default `instalador-registry/` under `--root`) instead of cloning gestion for it;
+  gestion is still audited, as a baseline key. A clone of instalador is deliberately not made: it would land under
+  `REPO_DOCS_ROOT`, `check --all` would walk it, and with no baseline key every finding in it is NEW (measured: 6
+  NEW, among them absolute paths in `aps/INSTALLER.md`). A missing registry now exits naming the instalador path; the
+  selftest covers the fetch target and that nothing walkable is left behind. `--gestion` is now `--instalador`.
+
 - **`phantom-command` reads an opted-in site's own files only (documentation, scribe chapters).** The site's
   pages under `usuario/ administracion/ desarrollo/ proyecto/` document the suite's other repositories:
   `administracion/aprovisionamiento.md` names gestion's `make install`, `make seed`, `make smoke`. The rule
