@@ -52,7 +52,7 @@ PROFILES = _resource("profiles")
 # Deliberately not a `string.Template` placeholder: this whole file is rendered, so a placeholder
 # here would also be substituted inside the comparison below that reads it. Every dollar-sigil token
 # in this file is substituted on the way out, which is why none of the prose in it writes one.
-CANON_STAMP = "9da993705f95"
+CANON_STAMP = "b3066927833f"
 
 # ---- craft vs decision (ADR 0002) --------------------------------------------------
 # Every rule below is craft: true of documentation anywhere. Every rule's PARAMETERS are
@@ -585,7 +585,7 @@ def scan(repo: Path) -> dict:
         # Spanish opt-in (ADR 0006): the marker is this repo's own decision, so the probe
         # reads the per-repo parameter — never the module ROOT.
         "docs_es": (repo / ".github" / "docs-es").exists(),
-        # Page-structure opt-in (scribe Q24), read from the same per-repo parameter.
+        # Page-structure opt-in, read from the same per-repo parameter.
         "site_structure": (repo / ".github" / "site-structure").exists(),
     }
 
@@ -693,7 +693,7 @@ def harvest(exemplar: Path) -> list:
 
 def required(level: str, org_mode: bool, archetype: str = None) -> tuple:
     # Derived from the archetype, not only the operator flag. `check --all` passes ONE flag for eight
-    # repos, so keying on it alone meant a sweep could never be right about both the org repo and the
+    # repos, so keying on it alone could never be right about both the org repo and the
     # other seven: it demanded a LICENSE and a CODEOWNERS that this tool's own layout.md forbids
     # there, while identifying the repo BY the profile/README.md it reported missing.
     if org_mode or archetype == "org-profile":
@@ -1230,7 +1230,7 @@ def _r_canon_stamp(ctx):
 
 def gitleaks_argv(path: Path) -> list:
     """The gitleaks invocation: the PR commit range when the docs workflow exports one,
-    the full source otherwise (local runs, the central sweep). `detect` works on every
+    the full source otherwise (local runs). `detect` works on every
     v8.x — the newer `git` subcommand only exists since v8.19.0, and which gitleaks a
     local machine has installed is none of this repo's business."""
     argv = ["gitleaks", "detect", "--no-banner", "--redact"]
@@ -1241,7 +1241,7 @@ def gitleaks_argv(path: Path) -> list:
 
 
 # The fallback scan when gitleaks is absent. An AWS key ending in EXAMPLE is AWS's published
-# placeholder (AKIAIOSFODNN7EXAMPLE), which gitleaks' default rule allows too.
+# placeholder, which gitleaks' default rule allows too.
 SECRET_HIGH = re.compile(r"(ghp_[A-Za-z0-9]{20,}|BEGIN [A-Z ]*PRIVATE KEY|AKIA(?![0-9A-Z]{9}EXAMPLE)[0-9A-Z]{16})")
 
 
@@ -1267,7 +1267,7 @@ def _r_secrets(ctx):
 @rule("public-leak", "error")
 def _r_public(ctx):
     # Keyed on what the repository IS, not on how it was invoked. Gated on --org, this rule was off
-    # during every `check --all` — that is, off for every sweep of the one repository in the
+    # during every `check --all` — that is, off for every run over the one repository in the
     # organisation that the whole world can read.
     if not (ctx["org_mode"] or ctx["facts"].get("archetype") == "org-profile"
             or ctx.get("private") is False):
@@ -1511,7 +1511,7 @@ def catalog_repos(repo: Path) -> list:
 
 
 def site_structure_problems(rel: str, text: str, catalog: list) -> list:
-    """What one page under the site dirs owes (scribe Q24): typed front matter whose audiencia
+    """What one page under the site dirs owes: typed front matter whose audiencia
     is its directory, and an H2 skeleton chosen by tipo (or the esqueleto override) whose
     headings appear in order, required ones present, nothing else beside them. Shapes are the
     profile's; this function is the craft that reads them."""
@@ -1734,7 +1734,7 @@ RATIONALE = {
     "claim-boxes": "Unchecked boxes are a backlog hiding in a document.",
     "adr-status": "22+ ADRs, zero Status fields — nothing can be superseded.",
     "diataxis-verification": "A typed guide (tipo: guia) must tell the reader how to check it worked.",
-    "site-structure": "scribe Q24: typed front matter + one H2 skeleton per tipo, so ~550 pages read alike "
+    "site-structure": "typed front matter + one H2 skeleton per tipo, so ~550 pages read alike "
                       "and search can filter them; opt-in via .github/site-structure.",
     "unfilled-contract": "A shipped outline looks like documentation and is not.",
     "licence-declaration": "Apps declare a licence in appinfo, composer and package at once.",
@@ -1896,7 +1896,7 @@ def check(repo: Path, level="full", org_mode=False, offline=False, fix=False,
 
 
 BASELINE = SKILL / "baseline.json"
-# Raised by `check --stamp-error` (the scheduled sweep): centrally, where canon/ is present, a
+# Raised by `check --stamp-error`: centrally, where canon/ is present, a
 # stale stamp means a vendored engine drifted — error; in-repo runs keep the historical warn.
 STAMP_IS_ERROR = False
 
@@ -2017,10 +2017,7 @@ def open_pr(repo: Path, paths: list, level: str) -> str:
 
 # ---------------------------------------------------------------- pr gate
 
-# Craft, not decision: which characters English never uses. The `Docs:` trailer this
-# gate once required is gone (scribe initiative, 2026-10-09): the Scribe routine reads
-# every merged PR and writes the documentation itself, so a self-declared line that
-# nothing verified only added friction.
+# Craft, not decision: which characters English never uses.
 ACCENTED = re.compile(r"[áéíóúñü¿¡]")
 
 
@@ -2078,10 +2075,10 @@ def selftest() -> None:
     # `APS-Conecta`, which also matches every `github.com/APS-Conecta/<repo>` URL in our own
     # documentation. Both directions are asserted, and the pattern now holds no placeholder at all, so
     # it reads identically in canon and in every copy.
-    # Without gitleaks (the Scribe routine's container) the fallback pattern scan flagged upstream's
-    # sample `AKIAIOSFODNN7EXAMPLE` on documentation's main, where CI's gitleaks passes: AWS
+    # Without gitleaks the fallback pattern scan flagged upstream's
+    # sample AWS key on documentation's main, where CI's gitleaks passes: AWS
     # publishes that key, and gitleaks' default rule skips keys ending in EXAMPLE. Both directions.
-    assert not SECRET_HIGH.search("--config key=AKIAIOSFODNN7EXAMPLE"), "AWS's documented example key"
+    assert not SECRET_HIGH.search("--config key=AKIA" + "IOSFODNN7EXAMPLE"), "AWS's documented example key"
     assert SECRET_HIGH.search("key=AKIA" + "2JQXZ7NMOPQRSTUV"), "a real-shaped AWS key"  # split: no literal for gitleaks
     assert SELF_REF.search("APS-Conecta's own code is proprietary."), \
         "the hyphenated organisation name must self-refer"
@@ -2117,9 +2114,8 @@ def selftest() -> None:
     # The pr-gate functions, every direction — pure calls, no fixture repo. The CLI
     # wrapper is a thin reader over $GITHUB_EVENT_PATH; these asserts pin the logic it
     # prints. 'y' in "x and y axes" is the one-stopword English case the ≤6-word
-    # threshold exists to spare. The gate checks the title only: the `Docs:` trailer was
-    # dropped by the scribe initiative (the Scribe routine reads every merge), so a PR
-    # touching code with no trailer passes, from any login.
+    # threshold exists to spare. The gate checks the title only, so a PR touching code
+    # passes from any login.
     assert title_is_english("Add usage manual for the scheduler")
     assert title_is_english("Fix x and y axes in the map legend")
     assert not title_is_english("Añade manual de uso")      # accents decide outright
@@ -2137,7 +2133,7 @@ def selftest() -> None:
     assert "docs_line_paths" not in P and "pr_exempt_logins" not in P, \
         "the Docs: trailer keys have no reader left — delete them from the profile"
 
-    # site-structure (scribe Q24), every direction — pure calls over one page's text. The
+    # site-structure, every direction — pure calls over one page's text. The
     # profile owns the shapes; these asserts pin the craft that reads them.
     cat = ["farmacia", "gestion"]
     ok_guia = ("---\ntipo: guia\naudiencia: usuario\napps: [farmacia]\n"
@@ -2188,7 +2184,7 @@ def selftest() -> None:
     assert site_structure_problems("usuario/archivos.md", woven.replace("## Resumen\n\nx\n\n", ""),
                                    cat) == ["H2 skeleton for plataforma: missing 'Resumen'"]
     # A placeholder declares itself: esqueleto: borrador owes only Resumen (and may list the
-    # sections it will have). Scribe's chapter lane picks pages by this key, not by guessing.
+    # sections it will have). Tooling picks placeholder pages by this key, not by guessing.
     draft = ("---\ntipo: guia\nesqueleto: borrador\naudiencia: usuario\napps: [farmacia]\n"
              "resumen: Farmacia.\n---\n\n# Farmacia\n\n## Resumen\n\nx\n\n## Secciones previstas\n\n- y\n")
     assert site_structure_problems("usuario/farmacia.md", draft, cat) == []
@@ -2230,7 +2226,7 @@ def selftest() -> None:
         assert "composer run lint:nope" not in have
 
     # The gitleaks invocation honours the PR range the docs workflow exports; without
-    # it the argv is byte-identical to the pre-R1b call (the sweep and local runs).
+    # it the argv is byte-identical to the pre-R1b call (local runs).
     _old_rng = os.environ.pop("REPO_DOCS_PR_RANGE", None)
     try:
         assert gitleaks_argv(SKILL) == ["gitleaks", "detect", "--no-banner", "--redact",
@@ -2519,7 +2515,6 @@ Ver el [aviso y licencias](https://aps-conecta.github.io/documentation/aviso/).
             ctx_es_now()                    # leave ctx_es describing the committed tree
 
             # routing: the fork resolver and its defaults
-            assert readme_rel("AIO") == ".github/README.md"
             assert readme_rel("IntraVox") == ".github/README.md"
             assert readme_rel("demo-es") == "README.md"
             assert readme_rel("no-such-repo") == "README.md" and readme_rel(None) == "README.md"
@@ -2686,7 +2681,7 @@ def main(argv=None):
     c.add_argument("--explain", action="store_true")
     c.add_argument("--save-baseline", dest="save_baseline", action="store_true")
     c.add_argument("--stamp-error", dest="stamp_error", action="store_true",
-                   help="raise canon-stamp to error — for the central sweep, where canon/ is present")
+                   help="raise canon-stamp to error — where canon/ is present")
     add("audit").add_argument("repo")
     add("outline").add_argument("repo")
     add("licences").add_argument("repo")

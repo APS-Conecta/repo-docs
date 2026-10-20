@@ -64,13 +64,9 @@ MADR — en [`references/conventions.md`](references/conventions.md).
 Funciona y está en su primer despliegue. 29 reglas, 5 hechos, 5 sondas de configuración, un perfil
 de dueño.
 
-El barrido semanal audita los doce repositorios del censo de la organización; este repositorio
-queda fuera del censo y se gobierna a sí mismo: pasa su propia puerta de control. La documentación
+Este repositorio se gobierna a sí mismo: pasa su propia puerta de control. La documentación
 lectora de este repositorio está en español según el
 [ADR 0006](docs/adr/0006-documentacion-en-espanol.md), activado con el marcador `.github/docs-es`.
-
-Pendiente: ensanchar el PAT del barrido para que el registro del censo vea lo que el barrido ve
-(tarea abierta en este repositorio).
 
 ## Inicio rápido de desarrollo
 

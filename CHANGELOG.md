@@ -10,7 +10,7 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- **`site-structure` (scribe S1b, error, opt-in).** A repo carrying `.github/site-structure` types every
+- **`site-structure` (error, opt-in).** A repo carrying `.github/site-structure` types every
   page under `usuario/ administracion/ desarrollo/ proyecto/`: front matter `tipo`, `audiencia` (= its
   directory), `apps` (a list, checked against `catalogo.yml` when present) and `resumen` (≤160 chars),
   plus one H2 skeleton per `tipo` — or per the `esqueleto: contratos` override for an app's developer
@@ -19,45 +19,42 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
   (the woven Nextcloud manuals plus the APS chapters) only read alike, and filter in search, if a
   machine holds the shape. An opted-in repo stands `diataxis-verification` down: the guide skeleton
   already requires Verificación, at error.
-- **`site-structure` fences nest the CommonMark way; `esqueleto: plataforma` (scribe S1c).** The H2
+- **`site-structure` fences nest the CommonMark way; `esqueleto: plataforma`.** The H2
   scan toggled on any backtick line, so a 4-backtick `{upstream}` block holding 3-backtick code
   mis-nested and leaked the block's headings into the page skeleton. A fence now closes only on the
   same character, at least as long, with nothing after it. Pages built from woven upstream blocks use
   the `plataforma` override: APS writes `Resumen` and an optional «En APS Conecta Gestión»; the blocks
   keep upstream's own headings inside their fences.
-- **`esqueleto: borrador` (scribe S1d).** A placeholder page declares itself and owes only `Resumen`
+- **`esqueleto: borrador`.** A placeholder page declares itself and owes only `Resumen`
   (and may list its `Secciones previstas`), so the site can opt into `site-structure` before every
-  chapter is written, and Scribe's chapter lane finds placeholders by this key instead of guessing.
+  chapter is written.
 
 ### Removed
 
-- **AIO's baseline rows.** APS-Conecta/AIO is being deleted (instalador holds all 49 of its commits), so its 89 `baseline.json` fingerprints are gone and the sweep comment no longer cites AIO's open findings. Deliberately left in the canon: the dead `repo_readmes` route for AIO in `profiles/aps-conecta.json` and the selftest assertion that exercises it — editing either changes `CANON_STAMP` and would flag stamp drift in every vendored repo; drop them with the next planned canon bump.
-- **The `Docs:` trailer rule (scribe S1).** `pr-gate` no longer asks a PR touching `l10n/ src/ templates/
+- **The `Docs:` trailer rule.** `pr-gate` no longer asks a PR touching `l10n/ src/ templates/
   appinfo/ lib/Command/ lib/Settings/` for `Docs: APS-Conecta/documentation#<n>` or `Docs: sin cambios`.
-  The line was self-declared and nothing verified it; the scribe initiative's Scribe routine now reads
-  every merged PR and writes the documentation itself. The profile keys `docs_line_paths` and
+  The line was self-declared and nothing verified it. The profile keys `docs_line_paths` and
   `pr_exempt_logins` go with it (no reader left; the selftest now asserts their absence). The
   English-title check stays, for every login. Canon re-stamped; repo-docs' own copies re-rendered.
 
 ### Fixed
 
-- **`phantom-command` reads an opted-in site's own files only (documentation, scribe chapters).** The site's
+- **`phantom-command` reads an opted-in site's own files only (documentation).** The site's
   pages under `usuario/ administracion/ desarrollo/ proyecto/` document the suite's other repositories:
   `administracion/aprovisionamiento.md` names gestion's `make install`, `make seed`, `make smoke`. The rule
   compared every code-voice `make X` with documentation's own Makefile, so 12 real gestion targets read as
   phantoms, and `make test` passed only because documentation happens to have a `test` target. Caught when
-  the scribe-chapters batch run wrote the gestion admin pages (2026-10-10). On a repo carrying
+  the gestion admin pages were written (2026-10-10). On a repo carrying
   `.github/site-structure`, the rule now skips the profile's `site_structure.dirs`; the repo's own
   README and docs still fire. Same reasoning as the `{upstream}` exemption (#16): a page that quotes
   another project's commands is not documenting this repo's.
 
-- **`secrets` fallback skips AWS's published example key (documentation, Scribe S4).** Where gitleaks
-  is absent — the 📚 Scribe routine's container — the fallback pattern scan flagged
-  `AKIAIOSFODNN7EXAMPLE`, the placeholder AWS documents and nextcloud/documentation's `occ
-  files_external:create` sample carries, on documentation's `main`, while CI's gitleaks passed it. The
-  routine then pushed past a red local check. Root cause: the fallback's `AKIA[0-9A-Z]{16}` had no
+- **`secrets` fallback skips AWS's published example key (documentation).** Where gitleaks
+  is absent, the fallback pattern scan flagged
+  the placeholder key AWS documents, which nextcloud/documentation's `occ
+  files_external:create` sample carries, on documentation's `main`, while CI's gitleaks passed it. Root cause: the fallback's `AKIA[0-9A-Z]{16}` had no
   counterpart to gitleaks' default allowance for keys ending in `EXAMPLE`. `SECRET_HIGH` is now a module
-  constant that skips them; selftest asserts both directions. Caught by the S4 re-run's own report.
+  constant that skips them; selftest asserts both directions.
 
 
 - **A woven `{upstream}` block's commands are the quoted project's (`phantom-command`,
@@ -96,22 +93,17 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
   false ERROR on IntraVox `AGENTS.md:34`. `composer run` now precedes `composer` in
   `DOC_COMMAND`, and `available_commands()` offers both spellings of every composer script.
 
-- **The census clone root.** The weekly sweep cloned the census into the repo-docs
-  checkout (cwd-relative paths in `census.py run`), so `check --all` walked repo-docs
+- **The census clone root.** `census.py run` cloned the census into the repo-docs
+  checkout (cwd-relative paths), so `check --all` walked repo-docs
   holding the whole org nested inside it and went red on NEW findings a stale baseline
   could not absorb. `census.py run --root` now clones outside the checkout
-  (`$RUNNER_TEMP/census` in CI, self-tested), the sweep points `REPO_DOCS_ROOT` there,
+  (self-tested),
   and the baseline is re-recorded from clones at main so today's findings are open and
   only future drift is NEW — the drift itself is filed as one Task issue per repo.
   Two truths the re-record taught, both folded in here: `check --all` exits 1 on *any*
-  open baselined error (41 sit open in AIO alone), so the sweep's verdict is now a grep
-  for `NEW` lines over the full log — the red line its header always claimed — and the
-  recorder must run with full auth (`--save-baseline` refuses degraded runs), which is
-  a credential the sweep's own PAT lacks: it gets 403 on both dependabot setting
-  probes, so gestion's two `could not read the setting` fingerprints are added to the
-  baseline by hand, the way `common`'s were once removed by hand — the recordable run
-  structurally cannot see what the weekly run will see every week until the PAT is
-  widened (tracked as a Task in this repo).
+  open baselined error, so the verdict is a grep
+  for `NEW` lines over the full log, and the
+  recorder must run with full auth (`--save-baseline` refuses degraded runs).
 
 ### Added
 
@@ -129,10 +121,9 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
   check R5's ruleset will name — and installs a pinned, checksum-verified gitleaks
   8.30.1 over a full-depth checkout. Two checks run on pull_request only: a PR touching
   `l10n/`, `src/`, `templates/`, `appinfo/`, `lib/Command/` or `lib/Settings/` must carry
-  a `Docs: APS-Conecta/documentation#<n>` or `Docs: sin cambios` line (the five
-  automation logins are exempt from the trailer, never from the English-title rule),
-  and every PR title must be English — the squash commit message is the title. The
-  watched paths and exemptions live in the profile (`docs_line_paths`,
+  a `Docs: APS-Conecta/documentation#<n>` or `Docs: sin cambios` line, and
+  every PR title must be English — the squash commit message is the title. The
+  watched paths live in the profile (`docs_line_paths`,
   `pr_exempt_logins`); the craft lives in the engine, where `pr-gate` reads the Actions
   event payload and derives its changed-file list from a merge-base diff over the same
   range scan uses.
@@ -140,7 +131,7 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
   `REPO_DOCS_PR_RANGE` (the PR's own commits; pushes scan just the pushed commits;
   empty only on a branch's first push) and `gitleaks_argv` turns it into
   `--log-opts` — a secret introduced by the PR fails the gate while history before the
-  base never produces findings. Local runs and the weekly sweep, which never install
+  base never produces findings. Local runs, which never install
   gitleaks, keep the fallback regex path and a byte-identical invocation shape.
 - **The Spanish opt-in: `docs_es` and the `.github/docs-es` marker (ADR-0006).** Opting in is
   one empty file, probed by `scan()` beside `has_ci` — a fact, consulted by the gated rules and
@@ -163,7 +154,7 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
   `documentation` repository alone, matched exact-or-prefix, never by suffix. The `readme-sections`
   contract holds opted-in READMEs to five ordered H2s — Qué es, Documentación, Estado, Inicio
   rápido de desarrollo, Licencia — with the Licencia section required to link the published
-  aviso, checked offline against the link text; the `repo_readmes` fork keeps AIO's and
+  aviso, checked offline against the link text; the `repo_readmes` fork keeps
   IntraVox's `.github/README.md` under the same contract. `retired-paths` probes the working
   tree — an existence probe, not a tracked-Markdown walk — for the eighteen paths ADR-0006
   retired (`BUGS.md`, `docs/index.md`, the manuals subtree), so a committed stylesheet and an
@@ -191,14 +182,12 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
   messages and stay open until each R4 rollout re-renders its vendored set. The refresh
   also ran gitleaks-less for the first time (`PATH=/usr/bin:/bin`), so the three
   recorded `gitleaks flagged findings` fingerprints — written by a gitleaks-bearing
-  machine, never reproducible on the sweep's runner — resolve permanently: the
-  baseline now matches the ruleset the weekly sweep actually replays. gestion's two
-  sweep-PAT claim-boxes fingerprints are carried by hand as before.
+  machine, never reproducible without it — resolve permanently: the
+  baseline now matches the gitleaks-less ruleset.
 - **`docs/index.md` retires from `levels.full` and `levels.ultra`; `notices_doc` is
   `THIRD-PARTY-NOTICES.md` alone.** ADR-0006 puts navigation in the README's Documentación
-  section — the flat index was a second navigation surface, and the four
-  `missing-required` fingerprints it kept open (`absent: docs/index.md` in AIO, agents,
-  pi-sandbox, rpiv-artifacts) become unproducible and resolve in the re-record below.
+  section — the flat index was a second navigation surface, and the
+  `missing-required` fingerprints it kept open (`absent: docs/index.md`) become unproducible and resolve in the re-record below.
   `references/layout.md` now teaches the README-first tree and keeps the ultra block's Diátaxis
   definition with its YAGNI note. gestion keeps its `LICENSING.md` allowed by name but it is no
   longer the engine's notices document: the transitional `licence-inventory` warn the flip opens
@@ -211,11 +200,8 @@ Format: [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
   those four plus the accepted licence-inventory warn, and the four repositories that never
   vendored the checker keep their ten `missing; canon/… defines it` fingerprints byte-identical
   while losing exactly their `docs/index.md` absence. The re-render and the re-record ship in
-  this same PR — an engine edit without a same-PR refresh turns the weekly sweep red between
-  them — and the per-repo drift resolves itself as rollout PRs re-render each vendored copy.
-  Recorded with full auth (`--save-baseline` refuses degraded runs); gestion's two sweep-PAT
-  `claim-boxes` fingerprints — `could not read the setting`, the dependabot probes the sweep's
-  token cannot make — are carried by hand, the way `common`'s were once removed by hand.
+  this same PR, and the per-repo drift resolves itself as rollout PRs re-render each vendored
+  copy. Recorded with full auth (`--save-baseline` refuses degraded runs).
 - **`doc_language_exempt` corrected to ten entries.** `GLOSARIO.md` is dropped — no such file
   exists anywhere in the suite — and the Spanish that actually ships is named instead:
   `docs/GUIA-CLINICA.md`, `docs/manual.md`, `Legal/OBLIGACIONES.md` and the six statute files, all
@@ -480,12 +466,12 @@ they found was in here, not in the documentation.
   directions — verified by reverting the guard and watching the assertion fail. ADR 0003 said this
   was "asserted in the selftest and must never become advisory" while nothing asserted it.
 - **`required()` and `public-leak` keyed on an operator flag instead of the archetype.** `check --all`
-  passes one `--org` for eight repositories, so a sweep could never be right about both the org repo
+  passes one `--org` for eight repositories, so a run could never be right about both the org repo
   and the other seven: it demanded a `LICENSE` and `CODEOWNERS` that `references/layout.md` forbids
   there, while identifying the repo *by* the `profile/README.md` it reported missing. Worse,
   `public-leak` returned early unless `--org` — so during every `--all` run the leak rule was **off
   for the only world-readable repository in the organisation**. Both now derive from the archetype.
-- **Skipped rules were counted as resolved.** An `--offline` sweep printed
+- **Skipped rules were counted as resolved.** An `--offline` run printed
   `SKIP branch-name` and `RESOLVED branch-name … default branch is 'master'` in the same run, while
   the branch was still `master`. A rule that did not run knows nothing: its prior findings are now
   reported `UNKNOWN`, never resolved, and the run is marked degraded.

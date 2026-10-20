@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""The census and the onboarding tripwire (org L8-02 / L8-01), extracted from
-sweep.yml so the lookup can be self-tested. The census = baseline keys (minus
+"""The census and the onboarding tripwire (org L8-02 / L8-01), kept as a script
+so the lookup can be self-tested. The census = baseline keys (minus
 two infrastructure entries) union OWN_APPS variable names from gestion's
 12-apps.sh — the suite's own registry, so a repo cannot ship without being in
 it.
@@ -10,7 +10,7 @@ OWN_APPS keys are provisioning variable names and carry no canonical casing
 repo (`IntraVox`, baseline.json:106). GitHub resolves repo names
 case-insensitively, so the clone succeeds either way — but the baseline
 membership test is a Python `in` over dict keys, an exact match, and it failed
-the 2026-09-28 sweep on exactly such a pair. The lookup here is therefore
+the 2026-09-28 census run on exactly such a pair. The lookup here is therefore
 case-insensitive: each census name folds onto the baseline key it matches
 case-insensitively (baseline is the canon authority, so clone dirs and the
 membership test line up on its spelling), and a name with NO case-insensitive
@@ -37,8 +37,7 @@ def sh(argv):
 
 
 def own_apps(registry: Path) -> list[str]:
-    """The variable-name half of every `key=url` entry in 12-apps.sh's OWN_APPS
-    (the sed/tr/cut pipeline the workflow used to inline, now testable)."""
+    """The variable-name half of every `key=url` entry in 12-apps.sh's OWN_APPS."""
     m = re.search(r'^OWN_APPS="(.*)"$', registry.read_text(), re.M)
     if not m:
         sys.exit(f"census: no OWN_APPS assignment found in {registry}")
@@ -63,9 +62,9 @@ def census(own: list[str], baseline_keys: list[str]) -> list[str]:
 def run(gestion: str, baseline_path: str, root: str = None) -> None:
     """Clone gestion (the registry), build the census, clone every repo in it,
     and fail on the first census repo without a baseline key. Every clone lands
-    under `root` — the sweep points it at RUNNER_TEMP so the census never nests
-    inside the repo-docs checkout: nested there, `check --all` walked repo-docs
-    itself with the whole org inside it (2026-10-06, run 37457227748)."""
+    under `root` — keep it outside the repo-docs checkout so the census never
+    nests inside it: nested there, `check --all` walked repo-docs itself with
+    the whole org inside it."""
     base = Path(root).resolve() if root else Path.cwd()
     gpath = Path(gestion)
     if not gpath.is_absolute():
@@ -92,7 +91,7 @@ def run(gestion: str, baseline_path: str, root: str = None) -> None:
 # ---------------------------------------------------------------- selftest
 
 def selftest() -> None:
-    # The live defect this module exists for (the 2026-09-28 red sweep):
+    # The live defect this module exists for (the 2026-09-28 red census run):
     # gestion's OWN_APPS carries the variable name `intravox`, baseline.json:106
     # carries the GitHub-canonical `IntraVox`. Both directions are asserted,
     # per the docs.py selftest convention (scripts/docs.py:1696).
@@ -100,7 +99,7 @@ def selftest() -> None:
     own = ["intravox"]
 
     # Fail direction — the defect class: an exact `in` over baseline keys misses
-    # the pair, which is what the workflow's inline membership test used to do.
+    # the pair.
     assert "intravox" not in keys, "fixture must actually mismatch in exact case"
 
     # Pass direction — the fix: resolution is case-insensitive and yields the
@@ -123,7 +122,7 @@ def selftest() -> None:
                        'other=https://example.invalid/other.git"\n')
         assert own_apps(reg) == ["intravox", "other"], own_apps(reg)
 
-    # run() must clone under --root, never beside the caller: the 2026-10-06 sweep
+    # run() must clone under --root, never beside the caller: the 2026-10-06 run
     # let the whole census land inside the repo-docs checkout, and `check --all`
     # then audited repo-docs with every repo nested in it. Assert destinations,
     # not clones: `sh` is stubbed to record argv and materialize targets, so no
@@ -166,9 +165,9 @@ def main(argv=None):
                    help="path of the gestion clone (cloned there when absent)")
     r.add_argument("--baseline", default="baseline.json")
     r.add_argument("--root", default=None,
-                   help="directory the census clones into (default: the cwd — the "
-                        "weekly sweep passes $RUNNER_TEMP/census so clones land "
-                        "outside the repo-docs checkout)")
+                   help="directory the census clones into (default: the cwd — pass a "
+                        "path outside the repo-docs checkout so clones do not land "
+                        "inside it)")
     sub.add_parser("selftest", help="assert the case-insensitive lookup, both directions")
     a = p.parse_args(argv)
     if a.cmd == "run":
